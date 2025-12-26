@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:markee/editor/shortcuts/intents.dart';
+import 'package:markee/src/shortcuts/intents.dart';
 
 import 'parser/parser.dart';
 

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:markee/editor/shortcuts/shortcuts_detection_widget.dart';
-import 'package:markee/editor/toolbar/toolbar.dart';
+import 'package:markee/src/shortcuts/shortcuts_detection_widget.dart';
+import 'package:markee/src/toolbar/toolbar.dart';
 
 class MarkdownEditor extends StatefulWidget {
   const MarkdownEditor({super.key});

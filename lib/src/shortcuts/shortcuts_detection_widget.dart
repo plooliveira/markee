@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:markee/editor/shortcuts/intents.dart';
+import 'package:markee/src/shortcuts/intents.dart';
 
 class ShortcutsDetectionWidget extends StatelessWidget {
   const ShortcutsDetectionWidget({
