@@ -1,0 +1,43 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:markee/src/markdown/inline_preview_parser.dart';
+import 'package:markee/src/markdown/markdown_document.dart';
+
+void main() {
+  group('MarkdownInlinePreviewParser', () {
+    const parser = MarkdownInlinePreviewParser();
+
+    test('parses headings with hidden syntax and styled content', () {
+      final line = MarkdownDocument.fromText('# Heading').lineAt(0);
+      final preview = parser.parseLine(line);
+
+      expect(preview.type, MarkdownLineType.heading);
+      expect(preview.headingLevel, 1);
+      expect(preview.segments[0].style, MarkdownSegmentStyle.hiddenSyntax);
+      expect(preview.segments[0].text, '# ');
+      expect(preview.segments[1].style, MarkdownSegmentStyle.headingText);
+      expect(preview.segments[1].text, 'Heading');
+    });
+
+    test('parses inline emphasis, links and images', () {
+      final line = MarkdownDocument.fromText(
+        '**bold** *it* [link](https://example.com) ![alt](/img.png)',
+      ).lineAt(0);
+      final preview = parser.parseLine(line);
+      final styles = preview.segments.map((segment) => segment.style).toList();
+
+      expect(styles, contains(MarkdownSegmentStyle.strong));
+      expect(styles, contains(MarkdownSegmentStyle.emphasis));
+      expect(styles, contains(MarkdownSegmentStyle.linkText));
+      expect(styles, contains(MarkdownSegmentStyle.linkDestination));
+      expect(styles, contains(MarkdownSegmentStyle.imageAlt));
+      expect(styles, contains(MarkdownSegmentStyle.imageSource));
+    });
+
+    test('parses code block lines separately from regular paragraphs', () {
+      final document = MarkdownDocument.fromText('```\nfinal x = 1;\n```');
+
+      expect(parser.parseLine(document.lineAt(0)).type, MarkdownLineType.codeFence);
+      expect(parser.parseLine(document.lineAt(1)).type, MarkdownLineType.codeBlock);
+    });
+  });
+}
