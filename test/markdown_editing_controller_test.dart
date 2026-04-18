@@ -122,5 +122,41 @@ void main() {
       );
       expect(controller.debugPreviewParseCount, firstParseCount + 1);
     });
+
+    testWidgets('formats previous line immediately after enter creates a new line', (
+      tester,
+    ) async {
+      final controller = MarkdownEditingController(text: '**bold**\n');
+      controller.selection = const TextSelection.collapsed(offset: 9);
+      late BuildContext context;
+
+      await tester.pumpWidget(
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: Builder(
+            builder: (capturedContext) {
+              context = capturedContext;
+              return const SizedBox();
+            },
+          ),
+        ),
+      );
+
+      final span = controller.buildTextSpan(
+        context: context,
+        style: const TextStyle(fontSize: 16),
+        withComposing: false,
+      );
+
+      expect(span.children, hasLength(2));
+      final formattedPreviousLine = span.children![0] as TextSpan;
+      final currentEmptyLine = span.children![1] as TextSpan;
+      final previousLineBoldSegment =
+          (formattedPreviousLine.children![1] as TextSpan);
+
+      expect(formattedPreviousLine.text, isNull);
+      expect(previousLineBoldSegment.text, 'bold');
+      expect(currentEmptyLine.text, isEmpty);
+    });
   });
 }

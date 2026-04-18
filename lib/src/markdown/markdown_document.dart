@@ -54,6 +54,17 @@ class MarkdownDocument {
           hasTrailingNewline: false,
         ),
       );
+    } else {
+      lines.add(
+        MarkdownLine(
+          index: index,
+          startOffset: offset,
+          endOffset: offset,
+          rawText: '',
+          content: '',
+          hasTrailingNewline: false,
+        ),
+      );
     }
 
     _assignCodeBlocks(lines);

@@ -23,5 +23,14 @@ void main() {
       expect(document.lineAt(0).rawText, isEmpty);
       expect(document.lineAt(0).content, isEmpty);
     });
+
+    test('preserves trailing empty line after enter', () {
+      final document = MarkdownDocument.fromText('hello\n');
+
+      expect(document.lineCount, 2);
+      expect(document.lineAt(0).rawText, 'hello\n');
+      expect(document.lineAt(1).rawText, isEmpty);
+      expect(document.lineIndexForOffset(6), 1);
+    });
   });
 }
