@@ -70,6 +70,17 @@ class MarkdownPreviewChunk {
     }
     return offset >= rawStart && offset <= rawEnd;
   }
+
+  int get leadingHiddenTextLength {
+    var length = 0;
+    for (final segment in previewSegments) {
+      if (segment.style != MarkdownSegmentStyle.hiddenSyntax) {
+        break;
+      }
+      length += segment.text.length;
+    }
+    return length;
+  }
 }
 
 class MarkdownSegment {

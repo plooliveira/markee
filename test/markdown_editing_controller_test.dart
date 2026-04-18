@@ -82,6 +82,21 @@ void main() {
       );
     });
 
+    test('shifts cursor into revealed inline token to keep backspace aligned', () {
+      final text = 'Every conversation has **Correspondence** and more text.';
+      final controller = MarkdownEditingController(text: text);
+
+      controller.selection = const TextSelection.collapsed(offset: 0);
+
+      final previewOffset = text.indexOf('Correspondence') + 1;
+      controller.selection = TextSelection.collapsed(offset: previewOffset);
+
+      expect(
+        controller.selection.extentOffset,
+        previewOffset + 2,
+      );
+    });
+
     testWidgets('keeps paragraph preview when cursor is outside inline token', (
       tester,
     ) async {

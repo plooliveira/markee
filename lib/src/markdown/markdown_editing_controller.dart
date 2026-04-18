@@ -45,14 +45,18 @@ class MarkdownEditingController extends TextEditingController {
   @override
   set value(TextEditingValue newValue) {
     final previousValue = value;
-    super.value = newValue;
+    final adjustedValue = _adjustSelectionForPreviewReveal(
+      previousValue: previousValue,
+      nextValue: newValue,
+    );
+    super.value = adjustedValue;
 
-    if (previousValue.text == newValue.text) {
+    if (previousValue.text == adjustedValue.text) {
       return;
     }
 
-    _invalidateForTextChange(previousValue.text, newValue.text);
-    _document = MarkdownDocument.fromText(newValue.text);
+    _invalidateForTextChange(previousValue.text, adjustedValue.text);
+    _document = MarkdownDocument.fromText(adjustedValue.text);
   }
 
   @override
@@ -151,11 +155,23 @@ class MarkdownEditingController extends TextEditingController {
     required MarkdownLine line,
     required MarkdownPreviewLine parsedLine,
   }) {
-    if (!value.selection.isCollapsed) {
+    return _revealedInlineChunkForSelection(
+      line: line,
+      parsedLine: parsedLine,
+      selection: value.selection,
+    );
+  }
+
+  MarkdownPreviewChunk? _revealedInlineChunkForSelection({
+    required MarkdownLine line,
+    required MarkdownPreviewLine parsedLine,
+    required TextSelection selection,
+  }) {
+    if (!selection.isCollapsed) {
       return null;
     }
 
-    final currentLineIndex = _document.lineIndexForOffset(value.selection.extentOffset);
+    final currentLineIndex = _document.lineIndexForOffset(selection.extentOffset);
     if (currentLineIndex != line.index) {
       return null;
     }
@@ -165,7 +181,7 @@ class MarkdownEditingController extends TextEditingController {
     }
 
     final localOffset =
-        (value.selection.extentOffset - line.startOffset).clamp(0, line.content.length);
+        (selection.extentOffset - line.startOffset).clamp(0, line.content.length);
 
     for (final chunk in parsedLine.chunks) {
       if (chunk.isEditable && chunk.containsOffset(localOffset)) {
@@ -174,6 +190,73 @@ class MarkdownEditingController extends TextEditingController {
     }
 
     return null;
+  }
+
+  TextEditingValue _adjustSelectionForPreviewReveal({
+    required TextEditingValue previousValue,
+    required TextEditingValue nextValue,
+  }) {
+    if (previousValue.text != nextValue.text || !nextValue.selection.isCollapsed) {
+      return nextValue;
+    }
+
+    if (previousValue.selection == nextValue.selection) {
+      return nextValue;
+    }
+
+    final document = _document.text == nextValue.text
+        ? _document
+        : MarkdownDocument.fromText(nextValue.text);
+    final currentLineIndex = document.lineIndexForOffset(nextValue.selection.extentOffset);
+    final line = document.lineAt(currentLineIndex);
+    final parsedLine = _parsedLineForFromDocument(document, line);
+
+    if (parsedLine.type == MarkdownLineType.heading || line.isInsideCodeBlock) {
+      return nextValue;
+    }
+
+    final previousChunk = _revealedInlineChunkForSelection(
+      line: line,
+      parsedLine: parsedLine,
+      selection: previousValue.selection,
+    );
+    final nextChunk = _revealedInlineChunkForSelection(
+      line: line,
+      parsedLine: parsedLine,
+      selection: nextValue.selection,
+    );
+
+    if (nextChunk == null || identical(nextChunk, previousChunk)) {
+      return nextValue;
+    }
+
+    final adjustedOffset = nextValue.selection.extentOffset + nextChunk.leadingHiddenTextLength;
+    return nextValue.copyWith(
+      selection: TextSelection.collapsed(
+        offset: adjustedOffset.clamp(nextChunk.rawStart, nextChunk.rawEnd),
+      ),
+    );
+  }
+
+  MarkdownPreviewLine _parsedLineForFromDocument(
+    MarkdownDocument document,
+    MarkdownLine line,
+  ) {
+    final cacheKey = line.index;
+    final fingerprint =
+        '${line.rawText}|${line.codeBlock?.startLine ?? -1}|${line.codeBlock?.endLine ?? -1}|${line.isFence}';
+    final cachedLine = _previewCache[cacheKey];
+    if (cachedLine != null && cachedLine.fingerprint == fingerprint) {
+      return cachedLine.parsedLine;
+    }
+
+    final parsedLine = _previewParser.parseLine(line);
+    _previewCache[cacheKey] = _CachedPreviewLine(
+      fingerprint: fingerprint,
+      parsedLine: parsedLine,
+    );
+    _debugPreviewParseCount++;
+    return parsedLine;
   }
 
   void _invalidateForTextChange(String oldText, String newText) {
