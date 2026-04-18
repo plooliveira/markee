@@ -24,13 +24,22 @@ void main() {
       ).lineAt(0);
       final preview = parser.parseLine(line);
       final styles = preview.segments.map((segment) => segment.style).toList();
+      final linkTextSegment = preview.segments.firstWhere(
+        (segment) => segment.style == MarkdownSegmentStyle.linkText,
+      );
+      final linkDestinationSegment = preview.segments.firstWhere(
+        (segment) =>
+            segment.text == 'https://example.com' &&
+            segment.style == MarkdownSegmentStyle.hiddenSyntax,
+      );
 
       expect(styles, contains(MarkdownSegmentStyle.strong));
       expect(styles, contains(MarkdownSegmentStyle.emphasis));
       expect(styles, contains(MarkdownSegmentStyle.linkText));
-      expect(styles, contains(MarkdownSegmentStyle.linkDestination));
       expect(styles, contains(MarkdownSegmentStyle.imageAlt));
       expect(styles, contains(MarkdownSegmentStyle.imageSource));
+      expect(linkTextSegment.linkUrl, 'https://example.com');
+      expect(linkDestinationSegment.style, MarkdownSegmentStyle.hiddenSyntax);
     });
 
     test('parses code block lines separately from regular paragraphs', () {

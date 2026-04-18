@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:markee/src/markdown/markdown_editing_controller.dart';
 
@@ -43,7 +44,9 @@ void main() {
     testWidgets('expands raw editing to the whole code block', (tester) async {
       final text = 'before\n```\ncode\n```\nafter';
       final controller = MarkdownEditingController(text: text);
-      controller.selection = TextSelection.collapsed(offset: text.indexOf('code') + 1);
+      controller.selection = TextSelection.collapsed(
+        offset: text.indexOf('code') + 1,
+      );
       late BuildContext context;
 
       await tester.pumpWidget(
@@ -69,8 +72,12 @@ void main() {
       expect((span.children![3] as TextSpan).text, '```\n');
     });
 
-    testWidgets('reuses cached preview lines for unchanged lines', (tester) async {
-      final controller = MarkdownEditingController(text: 'alpha\n**beta**\ngamma');
+    testWidgets('reuses cached preview lines for unchanged lines', (
+      tester,
+    ) async {
+      final controller = MarkdownEditingController(
+        text: 'alpha\n**beta**\ngamma',
+      );
       controller.selection = const TextSelection.collapsed(offset: 0);
       late BuildContext context;
 
@@ -123,11 +130,55 @@ void main() {
       expect(controller.debugPreviewParseCount, firstParseCount + 1);
     });
 
-    testWidgets('formats previous line immediately after enter creates a new line', (
+    testWidgets(
+      'formats previous line immediately after enter creates a new line',
+      (tester) async {
+        final controller = MarkdownEditingController(text: '**bold**\n');
+        controller.selection = const TextSelection.collapsed(offset: 9);
+        late BuildContext context;
+
+        await tester.pumpWidget(
+          Directionality(
+            textDirection: TextDirection.ltr,
+            child: Builder(
+              builder: (capturedContext) {
+                context = capturedContext;
+                return const SizedBox();
+              },
+            ),
+          ),
+        );
+
+        final span = controller.buildTextSpan(
+          context: context,
+          style: const TextStyle(fontSize: 16),
+          withComposing: false,
+        );
+
+        expect(span.children, hasLength(2));
+        final formattedPreviousLine = span.children![0] as TextSpan;
+        final currentEmptyLine = span.children![1] as TextSpan;
+        final previousLineBoldSegment =
+            (formattedPreviousLine.children![1] as TextSpan);
+
+        expect(formattedPreviousLine.text, isNull);
+        expect(previousLineBoldSegment.text, 'bold');
+        expect(currentEmptyLine.text, isEmpty);
+      },
+    );
+
+    testWidgets('renders preview link as clickable text and hides destination', (
       tester,
     ) async {
-      final controller = MarkdownEditingController(text: '**bold**\n');
-      controller.selection = const TextSelection.collapsed(offset: 9);
+      Uri? openedUri;
+      final controller = MarkdownEditingController(
+        text: '[My Link text](https://example.com)\n',
+        onOpenLink: (uri) async {
+          openedUri = uri;
+          return true;
+        },
+      );
+      controller.selection = TextSelection.collapsed(offset: controller.text.length);
       late BuildContext context;
 
       await tester.pumpWidget(
@@ -148,15 +199,22 @@ void main() {
         withComposing: false,
       );
 
-      expect(span.children, hasLength(2));
-      final formattedPreviousLine = span.children![0] as TextSpan;
-      final currentEmptyLine = span.children![1] as TextSpan;
-      final previousLineBoldSegment =
-          (formattedPreviousLine.children![1] as TextSpan);
+      final lineSpan = span.children!.first as TextSpan;
+      final linkTextSpan = lineSpan.children!
+          .whereType<TextSpan>()
+          .firstWhere((child) => child.text == 'My Link text');
+      final hiddenUrlSpan = lineSpan.children!
+          .whereType<TextSpan>()
+          .firstWhere((child) => child.text == 'https://example.com');
 
-      expect(formattedPreviousLine.text, isNull);
-      expect(previousLineBoldSegment.text, 'bold');
-      expect(currentEmptyLine.text, isEmpty);
+      expect(linkTextSpan.recognizer, isA<TapGestureRecognizer>());
+      expect(hiddenUrlSpan.style?.color, Colors.transparent);
+
+      final recognizer = linkTextSpan.recognizer! as TapGestureRecognizer;
+      recognizer.onTap?.call();
+      await tester.pump();
+
+      expect(openedUri, Uri.parse('https://example.com'));
     });
   });
 }

@@ -47,10 +47,12 @@ class MarkdownSegment {
   const MarkdownSegment({
     required this.text,
     required this.style,
+    this.linkUrl,
   });
 
   final String text;
   final MarkdownSegmentStyle style;
+  final String? linkUrl;
 }
 
 class MarkdownInlinePreviewParser {
@@ -325,11 +327,12 @@ class MarkdownInlinePreviewParser {
         MarkdownSegment(
           text: text.substring(offset + 1, closeBracket),
           style: MarkdownSegmentStyle.linkText,
+          linkUrl: text.substring(openParen + 1, closeParen),
         ),
         const MarkdownSegment(text: '](', style: MarkdownSegmentStyle.hiddenSyntax),
         MarkdownSegment(
           text: text.substring(openParen + 1, closeParen),
-          style: MarkdownSegmentStyle.linkDestination,
+          style: MarkdownSegmentStyle.hiddenSyntax,
         ),
         const MarkdownSegment(text: ')', style: MarkdownSegmentStyle.hiddenSyntax),
       ],

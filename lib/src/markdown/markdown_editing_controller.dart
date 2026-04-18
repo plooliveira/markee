@@ -1,17 +1,28 @@
+import 'dart:async';
+
+import 'package:flutter/gestures.dart';
 import 'package:flutter/widgets.dart';
 import 'package:markee/src/markdown/editable_region.dart';
 import 'package:markee/src/markdown/inline_preview_parser.dart';
 import 'package:markee/src/markdown/markdown_document.dart';
 import 'package:markee/src/markdown/span_builder.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+typedef MarkdownLinkOpener = Future<bool> Function(Uri uri);
 
 class MarkdownEditingController extends TextEditingController {
-  MarkdownEditingController({super.text}) {
+  MarkdownEditingController({
+    super.text,
+    MarkdownLinkOpener? onOpenLink,
+  }) : _onOpenLink = onOpenLink ?? _defaultOpenLink {
     _document = MarkdownDocument.fromText(text);
   }
 
   final MarkdownInlinePreviewParser _previewParser = const MarkdownInlinePreviewParser();
   final MarkdownSpanBuilder _spanBuilder = const MarkdownSpanBuilder();
   final Map<int, _CachedPreviewLine> _previewCache = {};
+  final Map<String, TapGestureRecognizer> _linkRecognizers = {};
+  final MarkdownLinkOpener _onOpenLink;
 
   late MarkdownDocument _document;
   int _debugPreviewParseCount = 0;
@@ -78,7 +89,11 @@ class MarkdownEditingController extends TextEditingController {
     }
 
     final parsedLine = _previewParser.parseLine(line);
-    final span = _spanBuilder.buildLine(line: parsedLine, baseStyle: baseStyle);
+    final span = _spanBuilder.buildLine(
+      line: parsedLine,
+      baseStyle: baseStyle,
+      linkRecognizerBuilder: _linkRecognizerForUrl,
+    );
     _previewCache[cacheKey] = _CachedPreviewLine(
       fingerprint: fingerprint,
       span: span,
@@ -163,6 +178,32 @@ class MarkdownEditingController extends TextEditingController {
     }
 
     return index;
+  }
+
+  TapGestureRecognizer _linkRecognizerForUrl(String url) {
+    return _linkRecognizers.putIfAbsent(url, () {
+      return TapGestureRecognizer()
+        ..onTap = () {
+          final uri = Uri.tryParse(url);
+          if (uri == null) {
+            return;
+          }
+          unawaited(_onOpenLink(uri));
+        };
+    });
+  }
+
+  static Future<bool> _defaultOpenLink(Uri uri) {
+    return launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
+  @override
+  void dispose() {
+    for (final recognizer in _linkRecognizers.values) {
+      recognizer.dispose();
+    }
+    _linkRecognizers.clear();
+    super.dispose();
   }
 }
 

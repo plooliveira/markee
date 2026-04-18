@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:markee/src/markdown/inline_preview_parser.dart';
 
@@ -9,6 +10,7 @@ class MarkdownSpanBuilder {
   TextSpan buildLine({
     required MarkdownPreviewLine line,
     required TextStyle baseStyle,
+    GestureRecognizer? Function(String url)? linkRecognizerBuilder,
   }) {
     return TextSpan(
       children: line.segments
@@ -20,6 +22,9 @@ class MarkdownSpanBuilder {
                 baseStyle,
                 headingLevel: line.headingLevel,
               ),
+              recognizer: segment.linkUrl == null
+                  ? null
+                  : linkRecognizerBuilder?.call(segment.linkUrl!),
             ),
           )
           .toList(growable: false),
