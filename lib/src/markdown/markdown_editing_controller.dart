@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/gestures.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:markee/src/markdown/editable_region.dart';
 import 'package:markee/src/markdown/inline_preview_parser.dart';
@@ -16,6 +17,8 @@ class MarkdownEditingController extends TextEditingController {
     MarkdownLinkOpener? onOpenLink,
   }) : _onOpenLink = onOpenLink ?? _defaultOpenLink {
     _document = MarkdownDocument.fromText(text);
+    _previewLinksEnabled = _computePreviewLinksEnabled();
+    HardwareKeyboard.instance.addHandler(_handleHardwareKeyEvent);
   }
 
   final MarkdownInlinePreviewParser _previewParser = const MarkdownInlinePreviewParser();
@@ -26,9 +29,18 @@ class MarkdownEditingController extends TextEditingController {
 
   late MarkdownDocument _document;
   int _debugPreviewParseCount = 0;
+  bool _previewLinksEnabled = false;
 
   @visibleForTesting
   int get debugPreviewParseCount => _debugPreviewParseCount;
+
+  @visibleForTesting
+  bool get debugPreviewLinksEnabled => _previewLinksEnabled;
+
+  @visibleForTesting
+  void debugSetPreviewLinksEnabled(bool enabled) {
+    _setPreviewLinksEnabled(enabled);
+  }
 
   @override
   set value(TextEditingValue newValue) {
@@ -92,6 +104,7 @@ class MarkdownEditingController extends TextEditingController {
     final span = _spanBuilder.buildLine(
       line: parsedLine,
       baseStyle: baseStyle,
+      linksEnabled: _previewLinksEnabled,
       linkRecognizerBuilder: _linkRecognizerForUrl,
     );
     _previewCache[cacheKey] = _CachedPreviewLine(
@@ -197,8 +210,28 @@ class MarkdownEditingController extends TextEditingController {
     return launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
+  bool _handleHardwareKeyEvent(KeyEvent event) {
+    _setPreviewLinksEnabled(_computePreviewLinksEnabled());
+    return false;
+  }
+
+  bool _computePreviewLinksEnabled() {
+    final hardwareKeyboard = HardwareKeyboard.instance;
+    return hardwareKeyboard.isControlPressed || hardwareKeyboard.isMetaPressed;
+  }
+
+  void _setPreviewLinksEnabled(bool enabled) {
+    if (_previewLinksEnabled == enabled) {
+      return;
+    }
+    _previewLinksEnabled = enabled;
+    _previewCache.clear();
+    notifyListeners();
+  }
+
   @override
   void dispose() {
+    HardwareKeyboard.instance.removeHandler(_handleHardwareKeyEvent);
     for (final recognizer in _linkRecognizers.values) {
       recognizer.dispose();
     }

@@ -167,7 +167,7 @@ void main() {
       },
     );
 
-    testWidgets('renders preview link as clickable text and hides destination', (
+    testWidgets('renders preview link as clickable text only with modifier', (
       tester,
     ) async {
       Uri? openedUri;
@@ -200,17 +200,31 @@ void main() {
       );
 
       final lineSpan = span.children!.first as TextSpan;
-      final linkTextSpan = lineSpan.children!
+      final linkTextSpanWithoutModifier = lineSpan.children!
           .whereType<TextSpan>()
           .firstWhere((child) => child.text == 'My Link text');
       final hiddenUrlSpan = lineSpan.children!
           .whereType<TextSpan>()
           .firstWhere((child) => child.text == 'https://example.com');
 
-      expect(linkTextSpan.recognizer, isA<TapGestureRecognizer>());
+      expect(linkTextSpanWithoutModifier.recognizer, isNull);
       expect(hiddenUrlSpan.style?.color, Colors.transparent);
 
-      final recognizer = linkTextSpan.recognizer! as TapGestureRecognizer;
+      controller.debugSetPreviewLinksEnabled(true);
+      final interactiveSpan = controller.buildTextSpan(
+        context: context,
+        style: const TextStyle(fontSize: 16),
+        withComposing: false,
+      );
+      final interactiveLineSpan = interactiveSpan.children!.first as TextSpan;
+      final linkTextSpanWithModifier = interactiveLineSpan.children!
+          .whereType<TextSpan>()
+          .firstWhere((child) => child.text == 'My Link text');
+
+      expect(linkTextSpanWithModifier.recognizer, isA<TapGestureRecognizer>());
+
+      final recognizer =
+          linkTextSpanWithModifier.recognizer! as TapGestureRecognizer;
       recognizer.onTap?.call();
       await tester.pump();
 

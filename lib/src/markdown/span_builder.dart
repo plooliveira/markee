@@ -10,6 +10,7 @@ class MarkdownSpanBuilder {
   TextSpan buildLine({
     required MarkdownPreviewLine line,
     required TextStyle baseStyle,
+    required bool linksEnabled,
     GestureRecognizer? Function(String url)? linkRecognizerBuilder,
   }) {
     return TextSpan(
@@ -22,7 +23,7 @@ class MarkdownSpanBuilder {
                 baseStyle,
                 headingLevel: line.headingLevel,
               ),
-              recognizer: segment.linkUrl == null
+              recognizer: !linksEnabled || segment.linkUrl == null
                   ? null
                   : linkRecognizerBuilder?.call(segment.linkUrl!),
             ),
