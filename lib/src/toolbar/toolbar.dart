@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:markee/src/markdown/markdown_formatter.dart';
 import 'package:markee/src/shortcuts/intents.dart';
-
-import 'parser/parser.dart';
 
 class MarkdownToolbar extends StatefulWidget {
   /// Creates a [MarkdownToolbar] widget.
@@ -667,14 +666,16 @@ class MarkdownToolbarState extends State<MarkdownToolbar> {
     widget.useIncludedTextField
         ? _includedFocusNode.requestFocus()
         : widget.focusNode?.requestFocus();
-    Format.toolbarItemPressed(
+    final controller = widget.useIncludedTextField
+        ? _includedController
+        : widget.controller ?? _includedController;
+    final selection = widget.useIncludedTextField
+        ? _includedController.selection
+        : widget.controller?.selection ?? _includedController.selection;
+
+    controller.value = MarkdownFormatter.formatToolbarOption(
       markdownToolbarOption: markdownToolbarOption,
-      controller: widget.useIncludedTextField
-          ? _includedController
-          : widget.controller ?? _includedController,
-      selection: widget.useIncludedTextField
-          ? _includedController.selection
-          : widget.controller?.selection ?? _includedController.selection,
+      value: controller.value.copyWith(selection: selection),
       option: option,
       customBoldCharacter: widget.boldCharacter,
       customItalicCharacter: widget.italicCharacter,
