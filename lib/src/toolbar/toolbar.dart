@@ -274,19 +274,10 @@ class MarkdownToolbarState extends State<MarkdownToolbar> {
           case TabIntent():
             // onToolbarItemPressed(markdownToolbarOption: MarkdownToolbarOption.bold);
             break;
-          case BoldIntent():
+          case MarkdownShortcutIntent(action: final action, option: final option):
             onToolbarItemPressed(
-              markdownToolbarOption: MarkdownToolbarOption.bold,
-            );
-            break;
-          case ItalicIntent():
-            onToolbarItemPressed(
-              markdownToolbarOption: MarkdownToolbarOption.italic,
-            );
-            break;
-          case StrikethroughIntent():
-            onToolbarItemPressed(
-              markdownToolbarOption: MarkdownToolbarOption.strikethrough,
+              markdownToolbarOption: action,
+              option: option,
             );
             break;
         }

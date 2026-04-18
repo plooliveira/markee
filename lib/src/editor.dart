@@ -1,21 +1,38 @@
 import 'package:flutter/material.dart';
+import 'package:markee/src/markdown/markdown_editing_controller.dart';
 import 'package:markee/src/shortcuts/shortcuts_detection_widget.dart';
+import 'package:markee/src/shortcuts/markdown_shortcut_map.dart';
 import 'package:markee/src/toolbar/toolbar.dart';
 
 class MarkdownEditor extends StatefulWidget {
-  const MarkdownEditor({super.key});
+  const MarkdownEditor({
+    super.key,
+    this.controller,
+    this.focusNode,
+    this.shortcutMap,
+  });
+
+  final MarkdownEditingController? controller;
+  final FocusNode? focusNode;
+  final MarkdownShortcutMap? shortcutMap;
 
   @override
   State<MarkdownEditor> createState() => _MarkdownEditorState();
 }
 
 class _MarkdownEditorState extends State<MarkdownEditor> {
-  final FocusNode _focusNode = FocusNode();
-  final TextEditingController _controller = TextEditingController();
+  late final FocusNode _focusNode;
+  late final MarkdownEditingController _controller;
   Function(Intent intent) shortcutsHandler = (intent) {};
+
+  bool get _ownsFocusNode => widget.focusNode == null;
+
+  bool get _ownsController => widget.controller == null;
 
   @override
   void initState() {
+    _focusNode = widget.focusNode ?? FocusNode();
+    _controller = widget.controller ?? MarkdownEditingController();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       setState(() {});
     });
@@ -24,8 +41,12 @@ class _MarkdownEditorState extends State<MarkdownEditor> {
 
   @override
   void dispose() {
-    _focusNode.dispose();
-    _controller.dispose();
+    if (_ownsFocusNode) {
+      _focusNode.dispose();
+    }
+    if (_ownsController) {
+      _controller.dispose();
+    }
     super.dispose();
   }
 
@@ -47,17 +68,21 @@ class _MarkdownEditorState extends State<MarkdownEditor> {
               },
             ),
             SizedBox(height: 24),
-            ShortcutsDetectionWidget(
-              shortcutsHandler: shortcutsHandler,
-              child: TextField(
-                controller: _controller,
-                focusNode: _focusNode,
-                autofocus: true,
-                style: const TextStyle(color: Colors.black, fontSize: 16),
-                cursorColor: Colors.black,
-                minLines: 25,
-                maxLines: null,
-                decoration: InputDecoration.collapsed(hintText: null),
+            Expanded(
+              child: ShortcutsDetectionWidget(
+                shortcutsHandler: shortcutsHandler,
+                shortcutMap: widget.shortcutMap,
+                child: TextField(
+                  controller: _controller,
+                  focusNode: _focusNode,
+                  autofocus: true,
+                  expands: true,
+                  maxLines: null,
+                  minLines: null,
+                  style: const TextStyle(color: Colors.black, fontSize: 16),
+                  cursorColor: Colors.black,
+                  decoration: InputDecoration.collapsed(hintText: null),
+                ),
               ),
             ),
           ],

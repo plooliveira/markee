@@ -1,45 +1,13 @@
 import 'package:flutter/widgets.dart';
-
-class BoldIntent extends Intent {
-  const BoldIntent();
-}
+import 'package:markee/src/markdown/markdown_formatter.dart';
 
 class TabIntent extends Intent {
   const TabIntent();
 }
 
-class ItalicIntent extends Intent {
-  const ItalicIntent();
+class MarkdownShortcutIntent extends Intent {
+  const MarkdownShortcutIntent(this.action, {this.option});
+
+  final MarkdownToolbarOption action;
+  final int? option;
 }
-
-class StrikethroughIntent extends Intent {
-  const StrikethroughIntent();
-}
-
-// class LinkIntent extends Intent {
-//   const LinkIntent();
-// }
-
-// class CodeIntent extends Intent {
-//   const CodeIntent();
-// }
-
-// class BulletedListIntent extends Intent {
-//   const BulletedListIntent();
-// }
-
-// class NumberedListIntent extends Intent {
-//   const NumberedListIntent();
-// }
-
-// class CheckboxIntent extends Intent {
-//   const CheckboxIntent();
-// }
-
-// class QuoteIntent extends Intent {
-//   const QuoteIntent();
-// }
-
-// class HorizontalRuleIntent extends Intent {
-//   const HorizontalRuleIntent();
-// }

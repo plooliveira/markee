@@ -1,48 +1,35 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:markee/src/shortcuts/intents.dart';
+import 'package:markee/src/shortcuts/markdown_shortcut_map.dart';
 
 class ShortcutsDetectionWidget extends StatelessWidget {
   const ShortcutsDetectionWidget({
     super.key,
     required this.shortcutsHandler,
     required this.child,
+    this.shortcutMap,
   });
 
   final Function(Intent intent) shortcutsHandler;
   final Widget child;
+  final MarkdownShortcutMap? shortcutMap;
 
   @override
   Widget build(BuildContext context) {
+    final resolvedShortcutMap =
+        shortcutMap ?? MarkdownShortcutMap.defaultForPlatform(Theme.of(context).platform);
+
     return Shortcuts(
-      shortcuts: {
-        LogicalKeySet(LogicalKeyboardKey.tab): TabIntent(),
-        //if platform is macos
-        if (Theme.of(context).platform == TargetPlatform.macOS) ...{
-          LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.keyB):
-              BoldIntent(),
-          LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.keyI):
-              ItalicIntent(),
-          LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.keyU):
-              StrikethroughIntent(),
-        },
-        //if platform is windows
-        if (Theme.of(context).platform == TargetPlatform.windows ||
-            Theme.of(context).platform == TargetPlatform.linux) ...{
-          LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyB):
-              BoldIntent(),
-          LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyI):
-              ItalicIntent(),
-          LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyU):
-              StrikethroughIntent(),
-        },
-      },
+      shortcuts: resolvedShortcutMap.shortcuts,
       child: Actions(
         actions: {
           TabIntent: CallbackAction(onInvoke: shortcutsHandler),
-          BoldIntent: CallbackAction(onInvoke: shortcutsHandler),
-          ItalicIntent: CallbackAction(onInvoke: shortcutsHandler),
-          StrikethroughIntent: CallbackAction(onInvoke: shortcutsHandler),
+          MarkdownShortcutIntent: CallbackAction<MarkdownShortcutIntent>(
+            onInvoke: (intent) {
+              shortcutsHandler(intent);
+              return null;
+            },
+          ),
         },
         child: child,
       ),
