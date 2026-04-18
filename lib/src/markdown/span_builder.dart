@@ -11,17 +11,46 @@ class MarkdownSpanBuilder {
     required MarkdownPreviewLine line,
     required TextStyle baseStyle,
     required bool linksEnabled,
+    MarkdownPreviewChunk? revealedChunk,
     GestureRecognizer? Function(String url)? linkRecognizerBuilder,
   }) {
     return TextSpan(
-      children: line.segments
+      children: line.chunks
+          .map(
+            (chunk) => _buildChunk(
+              chunk: chunk,
+              baseStyle: baseStyle,
+              headingLevel: line.headingLevel,
+              linksEnabled: linksEnabled,
+              revealedChunk: revealedChunk,
+              linkRecognizerBuilder: linkRecognizerBuilder,
+            ),
+          )
+          .toList(growable: false),
+    );
+  }
+
+  TextSpan _buildChunk({
+    required MarkdownPreviewChunk chunk,
+    required TextStyle baseStyle,
+    required bool linksEnabled,
+    required MarkdownPreviewChunk? revealedChunk,
+    required GestureRecognizer? Function(String url)? linkRecognizerBuilder,
+    int? headingLevel,
+  }) {
+    if (identical(chunk, revealedChunk)) {
+      return TextSpan(text: chunk.rawText, style: baseStyle);
+    }
+
+    return TextSpan(
+      children: chunk.previewSegments
           .map(
             (segment) => TextSpan(
               text: segment.text,
               style: _styleForSegment(
                 segment.style,
                 baseStyle,
-                headingLevel: line.headingLevel,
+                headingLevel: headingLevel,
               ),
               recognizer: !linksEnabled || segment.linkUrl == null
                   ? null

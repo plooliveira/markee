@@ -7,15 +7,15 @@ void main() {
     const parser = MarkdownInlinePreviewParser();
 
     test('parses headings with hidden syntax and styled content', () {
-      final line = MarkdownDocument.fromText('# Heading').lineAt(0);
+      final line = MarkdownDocument.fromText('# Heading **bold**').lineAt(0);
       final preview = parser.parseLine(line);
 
       expect(preview.type, MarkdownLineType.heading);
       expect(preview.headingLevel, 1);
-      expect(preview.segments[0].style, MarkdownSegmentStyle.hiddenSyntax);
-      expect(preview.segments[0].text, '# ');
-      expect(preview.segments[1].style, MarkdownSegmentStyle.headingText);
-      expect(preview.segments[1].text, 'Heading');
+      expect(preview.chunks, hasLength(2));
+      expect(preview.chunks[0].previewSegments.single.style, MarkdownSegmentStyle.hiddenSyntax);
+      expect(preview.chunks[1].previewSegments.single.style, MarkdownSegmentStyle.headingText);
+      expect(preview.chunks[1].previewSegments.single.text, 'Heading **bold**');
     });
 
     test('parses inline emphasis, links and images', () {

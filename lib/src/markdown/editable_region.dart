@@ -38,10 +38,24 @@ class EditableRegionResolver {
             extentOffset: math.max(selection.baseOffset, selection.extentOffset),
           );
 
+    if (normalizedSelection.isCollapsed &&
+        (composing == null || !composing.isValid || composing.isCollapsed)) {
+      final lineIndex = document.lineIndexForOffset(normalizedSelection.start);
+      final block = document.lineAt(lineIndex).codeBlock;
+      if (block != null) {
+        return MarkdownEditableRegion(
+          startLine: block.startLine,
+          endLine: block.endLine,
+        );
+      }
+      return const MarkdownEditableRegion.empty();
+    }
+
     var startLine = document.lineIndexForOffset(normalizedSelection.start);
-    final selectionEndOffset = normalizedSelection.isCollapsed
-        ? normalizedSelection.end
-        : math.max(normalizedSelection.end - 1, normalizedSelection.start);
+    final selectionEndOffset = math.max(
+      normalizedSelection.end - 1,
+      normalizedSelection.start,
+    );
     var endLine = document.lineIndexForOffset(selectionEndOffset);
 
     if (composing != null && composing.isValid && !composing.isCollapsed) {

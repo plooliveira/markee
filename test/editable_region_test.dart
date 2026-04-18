@@ -5,15 +5,16 @@ import 'package:markee/src/markdown/markdown_document.dart';
 
 void main() {
   group('EditableRegionResolver', () {
-    test('keeps collapsed selection on the current line', () {
+    test('keeps collapsed selection out of raw mode for normal text', () {
       final document = MarkdownDocument.fromText('one\n**two**\nthree');
       final region = EditableRegionResolver.resolve(
         document: document,
         selection: const TextSelection.collapsed(offset: 5),
       );
 
-      expect(region.startLine, 1);
-      expect(region.endLine, 1);
+      expect(region.containsLine(0), isFalse);
+      expect(region.containsLine(1), isFalse);
+      expect(region.containsLine(2), isFalse);
     });
 
     test('expands to the full fenced code block', () {

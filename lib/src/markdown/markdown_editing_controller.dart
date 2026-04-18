@@ -80,39 +80,100 @@ class MarkdownEditingController extends TextEditingController {
     return TextSpan(
       style: effectiveStyle,
       children: _document.lines.map((line) {
-        if (editableRegion.containsLine(line.index)) {
+        final parsedLine = _parsedLineFor(line);
+        if (editableRegion.containsLine(line.index) ||
+            _shouldRevealWholeLine(line: line, parsedLine: parsedLine)) {
           return TextSpan(text: line.rawText, style: effectiveStyle);
         }
-        return _buildPreviewLine(line: line, baseStyle: effectiveStyle);
+        return _buildPreviewLine(
+          line: line,
+          parsedLine: parsedLine,
+          baseStyle: effectiveStyle,
+        );
       }).toList(growable: false),
     );
   }
 
   TextSpan _buildPreviewLine({
     required MarkdownLine line,
+    required MarkdownPreviewLine parsedLine,
     required TextStyle baseStyle,
   }) {
+    final revealedChunk = _revealedInlineChunkFor(
+      line: line,
+      parsedLine: parsedLine,
+    );
+    final span = _spanBuilder.buildLine(
+      line: parsedLine,
+      baseStyle: baseStyle,
+      linksEnabled: _previewLinksEnabled,
+      revealedChunk: revealedChunk,
+      linkRecognizerBuilder: _linkRecognizerForUrl,
+    );
+    return span;
+  }
+
+  MarkdownPreviewLine _parsedLineFor(MarkdownLine line) {
     final cacheKey = line.index;
     final fingerprint =
         '${line.rawText}|${line.codeBlock?.startLine ?? -1}|${line.codeBlock?.endLine ?? -1}|${line.isFence}';
     final cachedLine = _previewCache[cacheKey];
     if (cachedLine != null && cachedLine.fingerprint == fingerprint) {
-      return cachedLine.span;
+      return cachedLine.parsedLine;
     }
 
     final parsedLine = _previewParser.parseLine(line);
-    final span = _spanBuilder.buildLine(
-      line: parsedLine,
-      baseStyle: baseStyle,
-      linksEnabled: _previewLinksEnabled,
-      linkRecognizerBuilder: _linkRecognizerForUrl,
-    );
     _previewCache[cacheKey] = _CachedPreviewLine(
       fingerprint: fingerprint,
-      span: span,
+      parsedLine: parsedLine,
     );
     _debugPreviewParseCount++;
-    return span;
+    return parsedLine;
+  }
+
+  bool _shouldRevealWholeLine({
+    required MarkdownLine line,
+    required MarkdownPreviewLine parsedLine,
+  }) {
+    if (!value.selection.isCollapsed) {
+      return false;
+    }
+
+    final currentLineIndex = _document.lineIndexForOffset(value.selection.extentOffset);
+    if (currentLineIndex != line.index) {
+      return false;
+    }
+
+    return parsedLine.type == MarkdownLineType.heading;
+  }
+
+  MarkdownPreviewChunk? _revealedInlineChunkFor({
+    required MarkdownLine line,
+    required MarkdownPreviewLine parsedLine,
+  }) {
+    if (!value.selection.isCollapsed) {
+      return null;
+    }
+
+    final currentLineIndex = _document.lineIndexForOffset(value.selection.extentOffset);
+    if (currentLineIndex != line.index) {
+      return null;
+    }
+
+    if (parsedLine.type == MarkdownLineType.heading) {
+      return null;
+    }
+
+    final localOffset =
+        (value.selection.extentOffset - line.startOffset).clamp(0, line.content.length);
+
+    for (final chunk in parsedLine.chunks) {
+      if (chunk.isEditable && chunk.containsOffset(localOffset)) {
+        return chunk;
+      }
+    }
+
+    return null;
   }
 
   void _invalidateForTextChange(String oldText, String newText) {
@@ -243,9 +304,9 @@ class MarkdownEditingController extends TextEditingController {
 class _CachedPreviewLine {
   const _CachedPreviewLine({
     required this.fingerprint,
-    required this.span,
+    required this.parsedLine,
   });
 
   final String fingerprint;
-  final TextSpan span;
+  final MarkdownPreviewLine parsedLine;
 }

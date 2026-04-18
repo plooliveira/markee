@@ -34,13 +34,42 @@ enum MarkdownSegmentStyle {
 class MarkdownPreviewLine {
   const MarkdownPreviewLine({
     required this.type,
-    required this.segments,
+    required this.chunks,
     this.headingLevel,
   });
 
   final MarkdownLineType type;
-  final List<MarkdownSegment> segments;
+  final List<MarkdownPreviewChunk> chunks;
   final int? headingLevel;
+
+  List<MarkdownSegment> get segments {
+    return [
+      for (final chunk in chunks) ...chunk.previewSegments,
+    ];
+  }
+}
+
+class MarkdownPreviewChunk {
+  const MarkdownPreviewChunk({
+    required this.rawText,
+    required this.previewSegments,
+    required this.rawStart,
+    required this.rawEnd,
+    this.isEditable = false,
+  });
+
+  final String rawText;
+  final List<MarkdownSegment> previewSegments;
+  final int rawStart;
+  final int rawEnd;
+  final bool isEditable;
+
+  bool containsOffset(int offset) {
+    if (rawStart == rawEnd) {
+      return false;
+    }
+    return offset >= rawStart && offset <= rawEnd;
+  }
 }
 
 class MarkdownSegment {
@@ -59,159 +88,231 @@ class MarkdownInlinePreviewParser {
   const MarkdownInlinePreviewParser();
 
   MarkdownPreviewLine parseLine(MarkdownLine line) {
-    final segments = <MarkdownSegment>[];
+    final chunks = <MarkdownPreviewChunk>[];
 
     if (line.isInsideCodeBlock) {
-      segments.add(
-        MarkdownSegment(
-          text: line.content,
-          style: line.isFence
-              ? MarkdownSegmentStyle.codeFence
-              : MarkdownSegmentStyle.code,
+      chunks.add(
+        MarkdownPreviewChunk(
+          rawText: line.content,
+          previewSegments: [
+            MarkdownSegment(
+              text: line.content,
+              style: line.isFence
+                  ? MarkdownSegmentStyle.codeFence
+                  : MarkdownSegmentStyle.code,
+            ),
+          ],
+          rawStart: 0,
+          rawEnd: line.content.length,
+          isEditable: true,
         ),
       );
-      if (line.hasTrailingNewline) {
-        segments.add(
-          const MarkdownSegment(text: '\n', style: MarkdownSegmentStyle.plain),
-        );
-      }
+      _appendNewLine(chunks, line);
       return MarkdownPreviewLine(
         type: line.isFence ? MarkdownLineType.codeFence : MarkdownLineType.codeBlock,
-        segments: segments,
+        chunks: chunks,
       );
     }
 
     final content = line.content;
     final headingMatch = RegExp(r'^(#{1,6}\s+)(.*)$').firstMatch(content);
     if (headingMatch != null) {
-      segments.add(
-        MarkdownSegment(
-          text: headingMatch.group(1)!,
-          style: MarkdownSegmentStyle.hiddenSyntax,
+      final prefix = headingMatch.group(1)!;
+      final title = headingMatch.group(2)!;
+      chunks.add(
+        MarkdownPreviewChunk(
+          rawText: prefix,
+          previewSegments: const [
+            MarkdownSegment(text: '', style: MarkdownSegmentStyle.hiddenSyntax),
+          ],
+          rawStart: 0,
+          rawEnd: prefix.length,
         ),
       );
-      segments.addAll(
-        _parseInline(
-          headingMatch.group(2)!,
-          defaultStyle: MarkdownSegmentStyle.headingText,
+      chunks.add(
+        MarkdownPreviewChunk(
+          rawText: title,
+          previewSegments: [
+            MarkdownSegment(text: title, style: MarkdownSegmentStyle.headingText),
+          ],
+          rawStart: prefix.length,
+          rawEnd: content.length,
         ),
       );
-      _appendNewLine(segments, line);
+      _appendNewLine(chunks, line);
       return MarkdownPreviewLine(
         type: MarkdownLineType.heading,
-        segments: segments,
-        headingLevel: headingMatch.group(1)!.trim().length,
+        chunks: chunks,
+        headingLevel: prefix.trim().length,
       );
     }
 
     final checkboxMatch = RegExp(r'^([-*]\s+\[(?: |x|X)\]\s+)(.*)$').firstMatch(content);
     if (checkboxMatch != null) {
-      segments.add(
-        MarkdownSegment(
-          text: checkboxMatch.group(1)!,
-          style: MarkdownSegmentStyle.listMarker,
+      final prefix = checkboxMatch.group(1)!;
+      chunks.add(
+        MarkdownPreviewChunk(
+          rawText: prefix,
+          previewSegments: [
+            MarkdownSegment(text: prefix, style: MarkdownSegmentStyle.listMarker),
+          ],
+          rawStart: 0,
+          rawEnd: prefix.length,
         ),
       );
-      segments.addAll(_parseInline(checkboxMatch.group(2)!));
-      _appendNewLine(segments, line);
+      chunks.addAll(
+        _parseInline(
+          checkboxMatch.group(2)!,
+          startOffset: prefix.length,
+        ),
+      );
+      _appendNewLine(chunks, line);
       return MarkdownPreviewLine(
         type: MarkdownLineType.checkbox,
-        segments: segments,
+        chunks: chunks,
       );
     }
 
     final orderedListMatch = RegExp(r'^(\d+\.\s+)(.*)$').firstMatch(content);
     if (orderedListMatch != null) {
-      segments.add(
-        MarkdownSegment(
-          text: orderedListMatch.group(1)!,
-          style: MarkdownSegmentStyle.listMarker,
+      final prefix = orderedListMatch.group(1)!;
+      chunks.add(
+        MarkdownPreviewChunk(
+          rawText: prefix,
+          previewSegments: [
+            MarkdownSegment(text: prefix, style: MarkdownSegmentStyle.listMarker),
+          ],
+          rawStart: 0,
+          rawEnd: prefix.length,
         ),
       );
-      segments.addAll(_parseInline(orderedListMatch.group(2)!));
-      _appendNewLine(segments, line);
+      chunks.addAll(
+        _parseInline(
+          orderedListMatch.group(2)!,
+          startOffset: prefix.length,
+        ),
+      );
+      _appendNewLine(chunks, line);
       return MarkdownPreviewLine(
         type: MarkdownLineType.orderedList,
-        segments: segments,
+        chunks: chunks,
       );
     }
 
     final unorderedListMatch = RegExp(r'^([-*+]\s+)(.*)$').firstMatch(content);
     if (unorderedListMatch != null) {
-      segments.add(
-        MarkdownSegment(
-          text: unorderedListMatch.group(1)!,
-          style: MarkdownSegmentStyle.listMarker,
+      final prefix = unorderedListMatch.group(1)!;
+      chunks.add(
+        MarkdownPreviewChunk(
+          rawText: prefix,
+          previewSegments: [
+            MarkdownSegment(text: prefix, style: MarkdownSegmentStyle.listMarker),
+          ],
+          rawStart: 0,
+          rawEnd: prefix.length,
         ),
       );
-      segments.addAll(_parseInline(unorderedListMatch.group(2)!));
-      _appendNewLine(segments, line);
+      chunks.addAll(
+        _parseInline(
+          unorderedListMatch.group(2)!,
+          startOffset: prefix.length,
+        ),
+      );
+      _appendNewLine(chunks, line);
       return MarkdownPreviewLine(
         type: MarkdownLineType.unorderedList,
-        segments: segments,
+        chunks: chunks,
       );
     }
 
     final quoteMatch = RegExp(r'^(>\s?)(.*)$').firstMatch(content);
     if (quoteMatch != null) {
-      segments.add(
-        MarkdownSegment(
-          text: quoteMatch.group(1)!,
-          style: MarkdownSegmentStyle.quoteMarker,
+      final prefix = quoteMatch.group(1)!;
+      chunks.add(
+        MarkdownPreviewChunk(
+          rawText: prefix,
+          previewSegments: [
+            MarkdownSegment(text: prefix, style: MarkdownSegmentStyle.quoteMarker),
+          ],
+          rawStart: 0,
+          rawEnd: prefix.length,
         ),
       );
-      segments.addAll(_parseInline(quoteMatch.group(2)!));
-      _appendNewLine(segments, line);
+      chunks.addAll(
+        _parseInline(
+          quoteMatch.group(2)!,
+          startOffset: prefix.length,
+        ),
+      );
+      _appendNewLine(chunks, line);
       return MarkdownPreviewLine(
         type: MarkdownLineType.quote,
-        segments: segments,
+        chunks: chunks,
       );
     }
 
     if (RegExp(r'^\s*([-*_])(?:\s*\1){2,}\s*$').hasMatch(content)) {
-      segments.add(
-        MarkdownSegment(
-          text: content,
-          style: MarkdownSegmentStyle.horizontalRule,
+      chunks.add(
+        MarkdownPreviewChunk(
+          rawText: content,
+          previewSegments: [
+            MarkdownSegment(
+              text: content,
+              style: MarkdownSegmentStyle.horizontalRule,
+            ),
+          ],
+          rawStart: 0,
+          rawEnd: content.length,
         ),
       );
-      _appendNewLine(segments, line);
+      _appendNewLine(chunks, line);
       return MarkdownPreviewLine(
         type: MarkdownLineType.horizontalRule,
-        segments: segments,
+        chunks: chunks,
       );
     }
 
-    segments.addAll(_parseInline(content));
-    _appendNewLine(segments, line);
-    return MarkdownPreviewLine(type: MarkdownLineType.paragraph, segments: segments);
+    chunks.addAll(_parseInline(content));
+    _appendNewLine(chunks, line);
+    return MarkdownPreviewLine(type: MarkdownLineType.paragraph, chunks: chunks);
   }
 
-  void _appendNewLine(List<MarkdownSegment> segments, MarkdownLine line) {
+  void _appendNewLine(List<MarkdownPreviewChunk> chunks, MarkdownLine line) {
     if (!line.hasTrailingNewline) {
       return;
     }
-    segments.add(const MarkdownSegment(text: '\n', style: MarkdownSegmentStyle.plain));
+
+    chunks.add(
+      MarkdownPreviewChunk(
+        rawText: '\n',
+        previewSegments: const [
+          MarkdownSegment(text: '\n', style: MarkdownSegmentStyle.plain),
+        ],
+        rawStart: line.content.length,
+        rawEnd: line.content.length,
+      ),
+    );
   }
 
-  List<MarkdownSegment> _parseInline(
+  List<MarkdownPreviewChunk> _parseInline(
     String text, {
     MarkdownSegmentStyle defaultStyle = MarkdownSegmentStyle.plain,
+    int startOffset = 0,
   }) {
-    final segments = <MarkdownSegment>[];
+    final chunks = <MarkdownPreviewChunk>[];
     var offset = 0;
 
     while (offset < text.length) {
-      final imageToken = _parseImage(text, offset);
+      final imageToken = _parseImage(text, offset, startOffset);
       if (imageToken != null) {
-        segments.addAll(imageToken.segments);
+        chunks.add(imageToken.chunk);
         offset = imageToken.nextOffset;
         continue;
       }
 
-      final linkToken = _parseLink(text, offset);
+      final linkToken = _parseLink(text, offset, startOffset);
       if (linkToken != null) {
-        segments.addAll(linkToken.segments);
+        chunks.add(linkToken.chunk);
         offset = linkToken.nextOffset;
         continue;
       }
@@ -219,11 +320,12 @@ class MarkdownInlinePreviewParser {
       final codeToken = _parseDelimitedToken(
         text: text,
         offset: offset,
+        startOffset: startOffset,
         delimiter: '`',
         innerStyle: MarkdownSegmentStyle.inlineCode,
       );
       if (codeToken != null) {
-        segments.addAll(codeToken.segments);
+        chunks.add(codeToken.chunk);
         offset = codeToken.nextOffset;
         continue;
       }
@@ -231,11 +333,12 @@ class MarkdownInlinePreviewParser {
       final strongToken = _parseDelimitedToken(
         text: text,
         offset: offset,
+        startOffset: startOffset,
         delimiter: '**',
         innerStyle: MarkdownSegmentStyle.strong,
       );
       if (strongToken != null) {
-        segments.addAll(strongToken.segments);
+        chunks.add(strongToken.chunk);
         offset = strongToken.nextOffset;
         continue;
       }
@@ -243,11 +346,12 @@ class MarkdownInlinePreviewParser {
       final strikethroughToken = _parseDelimitedToken(
         text: text,
         offset: offset,
+        startOffset: startOffset,
         delimiter: '~~',
         innerStyle: MarkdownSegmentStyle.strikethrough,
       );
       if (strikethroughToken != null) {
-        segments.addAll(strikethroughToken.segments);
+        chunks.add(strikethroughToken.chunk);
         offset = strikethroughToken.nextOffset;
         continue;
       }
@@ -255,30 +359,47 @@ class MarkdownInlinePreviewParser {
       final emphasisToken = _parseDelimitedToken(
         text: text,
         offset: offset,
+        startOffset: startOffset,
         delimiter: '*',
         innerStyle: MarkdownSegmentStyle.emphasis,
       );
       if (emphasisToken != null) {
-        segments.addAll(emphasisToken.segments);
+        chunks.add(emphasisToken.chunk);
         offset = emphasisToken.nextOffset;
         continue;
       }
 
       final nextMarker = _nextMarkerOffset(text, offset);
       final nextOffset = nextMarker == -1 ? text.length : nextMarker;
-      segments.add(
-        MarkdownSegment(
-          text: text.substring(offset, nextOffset),
-          style: defaultStyle,
+      final plainText = text.substring(offset, nextOffset);
+      chunks.add(
+        MarkdownPreviewChunk(
+          rawText: plainText,
+          previewSegments: [
+            MarkdownSegment(text: plainText, style: defaultStyle),
+          ],
+          rawStart: startOffset + offset,
+          rawEnd: startOffset + nextOffset,
         ),
       );
       offset = nextOffset;
     }
 
-    return segments;
+    if (chunks.isEmpty) {
+      chunks.add(
+        MarkdownPreviewChunk(
+          rawText: '',
+          previewSegments: const [],
+          rawStart: startOffset,
+          rawEnd: startOffset,
+        ),
+      );
+    }
+
+    return chunks;
   }
 
-  _ParsedToken? _parseImage(String text, int offset) {
+  _ParsedToken? _parseImage(String text, int offset, int startOffset) {
     if (!text.startsWith('![', offset)) {
       return null;
     }
@@ -290,25 +411,32 @@ class MarkdownInlinePreviewParser {
       return null;
     }
 
+    final rawText = text.substring(offset, closeParen + 1);
     return _ParsedToken(
       nextOffset: closeParen + 1,
-      segments: [
-        const MarkdownSegment(text: '![', style: MarkdownSegmentStyle.hiddenSyntax),
-        MarkdownSegment(
-          text: text.substring(offset + 2, closeBracket),
-          style: MarkdownSegmentStyle.imageAlt,
-        ),
-        const MarkdownSegment(text: '](', style: MarkdownSegmentStyle.hiddenSyntax),
-        MarkdownSegment(
-          text: text.substring(openParen + 1, closeParen),
-          style: MarkdownSegmentStyle.imageSource,
-        ),
-        const MarkdownSegment(text: ')', style: MarkdownSegmentStyle.hiddenSyntax),
-      ],
+      chunk: MarkdownPreviewChunk(
+        rawText: rawText,
+        rawStart: startOffset + offset,
+        rawEnd: startOffset + closeParen + 1,
+        isEditable: true,
+        previewSegments: [
+          const MarkdownSegment(text: '![', style: MarkdownSegmentStyle.hiddenSyntax),
+          MarkdownSegment(
+            text: text.substring(offset + 2, closeBracket),
+            style: MarkdownSegmentStyle.imageAlt,
+          ),
+          const MarkdownSegment(text: '](', style: MarkdownSegmentStyle.hiddenSyntax),
+          MarkdownSegment(
+            text: text.substring(openParen + 1, closeParen),
+            style: MarkdownSegmentStyle.imageSource,
+          ),
+          const MarkdownSegment(text: ')', style: MarkdownSegmentStyle.hiddenSyntax),
+        ],
+      ),
     );
   }
 
-  _ParsedToken? _parseLink(String text, int offset) {
+  _ParsedToken? _parseLink(String text, int offset, int startOffset) {
     if (!text.startsWith('[', offset)) {
       return null;
     }
@@ -320,28 +448,34 @@ class MarkdownInlinePreviewParser {
       return null;
     }
 
+    final rawText = text.substring(offset, closeParen + 1);
+    final url = text.substring(openParen + 1, closeParen);
     return _ParsedToken(
       nextOffset: closeParen + 1,
-      segments: [
-        const MarkdownSegment(text: '[', style: MarkdownSegmentStyle.hiddenSyntax),
-        MarkdownSegment(
-          text: text.substring(offset + 1, closeBracket),
-          style: MarkdownSegmentStyle.linkText,
-          linkUrl: text.substring(openParen + 1, closeParen),
-        ),
-        const MarkdownSegment(text: '](', style: MarkdownSegmentStyle.hiddenSyntax),
-        MarkdownSegment(
-          text: text.substring(openParen + 1, closeParen),
-          style: MarkdownSegmentStyle.hiddenSyntax,
-        ),
-        const MarkdownSegment(text: ')', style: MarkdownSegmentStyle.hiddenSyntax),
-      ],
+      chunk: MarkdownPreviewChunk(
+        rawText: rawText,
+        rawStart: startOffset + offset,
+        rawEnd: startOffset + closeParen + 1,
+        isEditable: true,
+        previewSegments: [
+          const MarkdownSegment(text: '[', style: MarkdownSegmentStyle.hiddenSyntax),
+          MarkdownSegment(
+            text: text.substring(offset + 1, closeBracket),
+            style: MarkdownSegmentStyle.linkText,
+            linkUrl: url,
+          ),
+          const MarkdownSegment(text: '](', style: MarkdownSegmentStyle.hiddenSyntax),
+          MarkdownSegment(text: url, style: MarkdownSegmentStyle.hiddenSyntax),
+          const MarkdownSegment(text: ')', style: MarkdownSegmentStyle.hiddenSyntax),
+        ],
+      ),
     );
   }
 
   _ParsedToken? _parseDelimitedToken({
     required String text,
     required int offset,
+    required int startOffset,
     required String delimiter,
     required MarkdownSegmentStyle innerStyle,
   }) {
@@ -354,16 +488,23 @@ class MarkdownInlinePreviewParser {
       return null;
     }
 
+    final rawText = text.substring(offset, closeOffset + delimiter.length);
     return _ParsedToken(
       nextOffset: closeOffset + delimiter.length,
-      segments: [
-        MarkdownSegment(text: delimiter, style: MarkdownSegmentStyle.hiddenSyntax),
-        MarkdownSegment(
-          text: text.substring(offset + delimiter.length, closeOffset),
-          style: innerStyle,
-        ),
-        MarkdownSegment(text: delimiter, style: MarkdownSegmentStyle.hiddenSyntax),
-      ],
+      chunk: MarkdownPreviewChunk(
+        rawText: rawText,
+        rawStart: startOffset + offset,
+        rawEnd: startOffset + closeOffset + delimiter.length,
+        isEditable: true,
+        previewSegments: [
+          MarkdownSegment(text: delimiter, style: MarkdownSegmentStyle.hiddenSyntax),
+          MarkdownSegment(
+            text: text.substring(offset + delimiter.length, closeOffset),
+            style: innerStyle,
+          ),
+          MarkdownSegment(text: delimiter, style: MarkdownSegmentStyle.hiddenSyntax),
+        ],
+      ),
     );
   }
 
@@ -386,9 +527,9 @@ class MarkdownInlinePreviewParser {
 class _ParsedToken {
   const _ParsedToken({
     required this.nextOffset,
-    required this.segments,
+    required this.chunk,
   });
 
   final int nextOffset;
-  final List<MarkdownSegment> segments;
+  final MarkdownPreviewChunk chunk;
 }
