@@ -12,7 +12,7 @@ class MarkdownEditor extends StatefulWidget {
     this.shortcutMap,
   });
 
-  final MarkdownEditingController? controller;
+  final TextEditingController? controller;
   final FocusNode? focusNode;
   final MarkdownShortcutMap? shortcutMap;
 
@@ -22,7 +22,7 @@ class MarkdownEditor extends StatefulWidget {
 
 class _MarkdownEditorState extends State<MarkdownEditor> {
   late final FocusNode _focusNode;
-  late final MarkdownEditingController _controller;
+  late final TextEditingController _controller;
   Function(Intent intent) shortcutsHandler = (intent) {};
 
   bool get _ownsFocusNode => widget.focusNode == null;
@@ -32,7 +32,7 @@ class _MarkdownEditorState extends State<MarkdownEditor> {
   @override
   void initState() {
     _focusNode = widget.focusNode ?? FocusNode();
-    _controller = widget.controller ?? MarkdownEditingController();
+    _controller = widget.controller ?? TextEditingController();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       setState(() {});
     });
