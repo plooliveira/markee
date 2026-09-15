@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
-import 'package:markee/src/markdown/editable_region.dart';
-import 'package:markee/src/markdown/inline_preview_parser.dart';
-import 'package:markee/src/markdown/markdown_document.dart';
+import 'package:markee/src/markdown_deprecated/editable_region.dart';
+import 'package:markee/src/markdown_deprecated/inline_preview_parser.dart';
+import 'package:markee/src/markdown_deprecated/markdown_document.dart';
 
 enum MarkdownEditPolicy {
   preservePreview,
@@ -11,10 +11,7 @@ enum MarkdownEditPolicy {
 }
 
 class MarkdownLineEditDecision {
-  const MarkdownLineEditDecision({
-    required this.policy,
-    this.revealedChunk,
-  });
+  const MarkdownLineEditDecision({required this.policy, this.revealedChunk});
 
   final MarkdownEditPolicy policy;
   final MarkdownPreviewChunk? revealedChunk;
@@ -50,7 +47,9 @@ class MarkdownEditPolicyResolver {
       );
     }
 
-    final currentLineIndex = document.lineIndexForOffset(selection.extentOffset);
+    final currentLineIndex = document.lineIndexForOffset(
+      selection.extentOffset,
+    );
     if (currentLineIndex != line.index) {
       return const MarkdownLineEditDecision(
         policy: MarkdownEditPolicy.preservePreview,
@@ -91,13 +90,18 @@ class MarkdownEditPolicyResolver {
       return null;
     }
 
-    final currentLineIndex = document.lineIndexForOffset(selection.extentOffset);
-    if (currentLineIndex != line.index || parsedLine.type == MarkdownLineType.heading) {
+    final currentLineIndex = document.lineIndexForOffset(
+      selection.extentOffset,
+    );
+    if (currentLineIndex != line.index ||
+        parsedLine.type == MarkdownLineType.heading) {
       return null;
     }
 
-    final localOffset =
-        (selection.extentOffset - line.startOffset).clamp(0, line.content.length);
+    final localOffset = (selection.extentOffset - line.startOffset).clamp(
+      0,
+      line.content.length,
+    );
 
     for (final chunk in parsedLine.chunks) {
       if (chunk.isEditable && chunk.containsOffset(localOffset)) {

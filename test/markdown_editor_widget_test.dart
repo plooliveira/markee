@@ -4,12 +4,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:markee/markee.dart';
 
 void main() {
-  testWidgets('ctrl+b applies bold formatting through shortcuts', (tester) async {
+  testWidgets('ctrl+b applies bold formatting through shortcuts', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(1200, 2200);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
 
-    final controller = MarkdownEditingController(text: 'hello');
+    final controller = TextEditingController(text: 'hello');
 
     await tester.pumpWidget(
       MaterialApp(

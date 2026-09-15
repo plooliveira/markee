@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:markee/src/markdown/markdown_formatter.dart';
+import 'package:markee/src/markdown_deprecated/markdown_formatter.dart';
 
 void main() {
   group('MarkdownFormatter', () {
@@ -47,7 +47,10 @@ void main() {
 
       expect(nextValue.text, 'hello[My Link text](https://example.com)');
       expect(nextValue.selection.baseOffset, greaterThan(5));
-      expect(nextValue.selection.extentOffset, greaterThan(nextValue.selection.baseOffset));
+      expect(
+        nextValue.selection.extentOffset,
+        greaterThan(nextValue.selection.baseOffset),
+      );
     });
   });
 }

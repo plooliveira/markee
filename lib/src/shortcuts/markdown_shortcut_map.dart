@@ -27,26 +27,59 @@ class MarkdownShortcutMap {
 
     return MarkdownShortcutMap({
       const SingleActivator(LogicalKeyboardKey.tab): const TabIntent(),
-      activator(LogicalKeyboardKey.keyB):
-          const MarkdownShortcutIntent(MarkdownToolbarOption.bold),
-      activator(LogicalKeyboardKey.keyI):
-          const MarkdownShortcutIntent(MarkdownToolbarOption.italic),
+      activator(LogicalKeyboardKey.keyB): const MarkdownShortcutIntent(
+        MarkdownToolbarOption.bold,
+      ),
+      activator(LogicalKeyboardKey.keyI): const MarkdownShortcutIntent(
+        MarkdownToolbarOption.italic,
+      ),
       activator(LogicalKeyboardKey.keyX, shift: true):
           const MarkdownShortcutIntent(MarkdownToolbarOption.strikethrough),
-      activator(LogicalKeyboardKey.keyK):
-          const MarkdownShortcutIntent(MarkdownToolbarOption.link),
-      activator(LogicalKeyboardKey.digit1, alt: true):
-          const MarkdownShortcutIntent(MarkdownToolbarOption.heading, option: 0),
-      activator(LogicalKeyboardKey.digit2, alt: true):
-          const MarkdownShortcutIntent(MarkdownToolbarOption.heading, option: 1),
-      activator(LogicalKeyboardKey.digit3, alt: true):
-          const MarkdownShortcutIntent(MarkdownToolbarOption.heading, option: 2),
-      activator(LogicalKeyboardKey.digit4, alt: true):
-          const MarkdownShortcutIntent(MarkdownToolbarOption.heading, option: 3),
-      activator(LogicalKeyboardKey.digit5, alt: true):
-          const MarkdownShortcutIntent(MarkdownToolbarOption.heading, option: 4),
-      activator(LogicalKeyboardKey.digit6, alt: true):
-          const MarkdownShortcutIntent(MarkdownToolbarOption.heading, option: 5),
+      activator(LogicalKeyboardKey.keyK): const MarkdownShortcutIntent(
+        MarkdownToolbarOption.link,
+      ),
+      activator(
+        LogicalKeyboardKey.digit1,
+        alt: true,
+      ): const MarkdownShortcutIntent(
+        MarkdownToolbarOption.heading,
+        option: 0,
+      ),
+      activator(
+        LogicalKeyboardKey.digit2,
+        alt: true,
+      ): const MarkdownShortcutIntent(
+        MarkdownToolbarOption.heading,
+        option: 1,
+      ),
+      activator(
+        LogicalKeyboardKey.digit3,
+        alt: true,
+      ): const MarkdownShortcutIntent(
+        MarkdownToolbarOption.heading,
+        option: 2,
+      ),
+      activator(
+        LogicalKeyboardKey.digit4,
+        alt: true,
+      ): const MarkdownShortcutIntent(
+        MarkdownToolbarOption.heading,
+        option: 3,
+      ),
+      activator(
+        LogicalKeyboardKey.digit5,
+        alt: true,
+      ): const MarkdownShortcutIntent(
+        MarkdownToolbarOption.heading,
+        option: 4,
+      ),
+      activator(
+        LogicalKeyboardKey.digit6,
+        alt: true,
+      ): const MarkdownShortcutIntent(
+        MarkdownToolbarOption.heading,
+        option: 5,
+      ),
       activator(LogicalKeyboardKey.keyC, alt: true):
           const MarkdownShortcutIntent(MarkdownToolbarOption.code),
       activator(LogicalKeyboardKey.keyI, alt: true):

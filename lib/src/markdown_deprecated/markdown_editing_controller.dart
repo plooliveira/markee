@@ -1,17 +1,14 @@
 import 'package:flutter/widgets.dart';
-import 'package:markee/src/markdown/markdown_document.dart';
-import 'package:markee/src/markdown/markdown_link_behavior.dart';
-import 'package:markee/src/markdown/markdown_preview_engine.dart';
-import 'package:markee/src/markdown/markdown_selection_mapper.dart';
+import 'package:markee/src/markdown_deprecated/markdown_document.dart';
+import 'package:markee/src/markdown_deprecated/markdown_link_behavior.dart';
+import 'package:markee/src/markdown_deprecated/markdown_preview_engine.dart';
+import 'package:markee/src/markdown_deprecated/markdown_selection_mapper.dart';
 
-export 'package:markee/src/markdown/markdown_link_behavior.dart'
+export 'package:markee/src/markdown_deprecated/markdown_link_behavior.dart'
     show MarkdownLinkOpener;
 
 class MarkdownEditingController extends TextEditingController {
-  MarkdownEditingController({
-    super.text,
-    MarkdownLinkOpener? onOpenLink,
-  }) {
+  MarkdownEditingController({super.text, MarkdownLinkOpener? onOpenLink}) {
     _linkBehavior = MarkdownLinkBehavior(
       onOpenLink: onOpenLink,
       onLinksEnabledChanged: (enabled) {
@@ -23,7 +20,8 @@ class MarkdownEditingController extends TextEditingController {
   }
 
   final MarkdownPreviewEngine _previewEngine = MarkdownPreviewEngine();
-  final MarkdownSelectionMapper _selectionMapper = const MarkdownSelectionMapper();
+  final MarkdownSelectionMapper _selectionMapper =
+      const MarkdownSelectionMapper();
   late final MarkdownLinkBehavior _linkBehavior;
 
   late MarkdownDocument _document;
@@ -45,7 +43,9 @@ class MarkdownEditingController extends TextEditingController {
     final document = _document.text == newValue.text
         ? _document
         : MarkdownDocument.fromText(newValue.text);
-    final line = document.lineAt(document.lineIndexForOffset(newValue.selection.extentOffset));
+    final line = document.lineAt(
+      document.lineIndexForOffset(newValue.selection.extentOffset),
+    );
     final parsedLine = _previewEngine.parsedLineFor(line);
     final adjustedValue = _selectionMapper.adjustSelectionForPreviewReveal(
       document: document,
@@ -60,7 +60,10 @@ class MarkdownEditingController extends TextEditingController {
       return;
     }
 
-    _previewEngine.invalidateForTextChange(previousValue.text, adjustedValue.text);
+    _previewEngine.invalidateForTextChange(
+      previousValue.text,
+      adjustedValue.text,
+    );
     _document = document;
   }
 

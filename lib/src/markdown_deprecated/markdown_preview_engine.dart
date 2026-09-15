@@ -1,15 +1,16 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/widgets.dart';
-import 'package:markee/src/markdown/inline_preview_parser.dart';
-import 'package:markee/src/markdown/markdown_document.dart';
-import 'package:markee/src/markdown/markdown_edit_policy.dart';
-import 'package:markee/src/markdown/span_builder.dart';
+import 'package:markee/src/markdown_deprecated/inline_preview_parser.dart';
+import 'package:markee/src/markdown_deprecated/markdown_document.dart';
+import 'package:markee/src/markdown_deprecated/markdown_edit_policy.dart';
+import 'package:markee/src/markdown_deprecated/span_builder.dart';
 
 class MarkdownPreviewEngine {
   MarkdownPreviewEngine({
     MarkdownInlinePreviewParser parser = const MarkdownInlinePreviewParser(),
     MarkdownSpanBuilder spanBuilder = const MarkdownSpanBuilder(),
-    MarkdownEditPolicyResolver policyResolver = const MarkdownEditPolicyResolver(),
+    MarkdownEditPolicyResolver policyResolver =
+        const MarkdownEditPolicyResolver(),
   }) : _parser = parser,
        _spanBuilder = spanBuilder,
        _policyResolver = policyResolver;
@@ -38,29 +39,31 @@ class MarkdownPreviewEngine {
     final composing = withComposing ? value.composing : null;
     return TextSpan(
       style: baseStyle,
-      children: document.lines.map((line) {
-        final parsedLine = parsedLineFor(line);
-        final decision = _policyResolver.resolveLineDecision(
-          document: document,
-          line: line,
-          parsedLine: parsedLine,
-          selection: value.selection,
-          composing: composing,
-        );
+      children: document.lines
+          .map((line) {
+            final parsedLine = parsedLineFor(line);
+            final decision = _policyResolver.resolveLineDecision(
+              document: document,
+              line: line,
+              parsedLine: parsedLine,
+              selection: value.selection,
+              composing: composing,
+            );
 
-        if (decision.policy == MarkdownEditPolicy.revealWholeLine ||
-            decision.policy == MarkdownEditPolicy.revealWholeBlock) {
-          return TextSpan(text: line.rawText, style: baseStyle);
-        }
+            if (decision.policy == MarkdownEditPolicy.revealWholeLine ||
+                decision.policy == MarkdownEditPolicy.revealWholeBlock) {
+              return TextSpan(text: line.rawText, style: baseStyle);
+            }
 
-        return _spanBuilder.buildLine(
-          line: parsedLine,
-          baseStyle: baseStyle,
-          linksEnabled: linksEnabled,
-          revealedChunk: decision.revealedChunk,
-          linkRecognizerBuilder: linkRecognizerBuilder,
-        );
-      }).toList(growable: false),
+            return _spanBuilder.buildLine(
+              line: parsedLine,
+              baseStyle: baseStyle,
+              linksEnabled: linksEnabled,
+              revealedChunk: decision.revealedChunk,
+              linkRecognizerBuilder: linkRecognizerBuilder,
+            );
+          })
+          .toList(growable: false),
     );
   }
 
@@ -100,15 +103,21 @@ class MarkdownPreviewEngine {
     final newChangedCount = newDocument.lineCount - prefixLength - suffixLength;
 
     if (oldChangedCount > 0 || newChangedCount > 0) {
-      for (var lineIndex = prefixLength;
-          lineIndex < newDocument.lineCount - suffixLength;
-          lineIndex++) {
+      for (
+        var lineIndex = prefixLength;
+        lineIndex < newDocument.lineCount - suffixLength;
+        lineIndex++
+      ) {
         _previewCache.remove(lineIndex);
       }
     }
 
     if (oldDocument.lineCount != newDocument.lineCount) {
-      for (var lineIndex = prefixLength; lineIndex < oldDocument.lineCount; lineIndex++) {
+      for (
+        var lineIndex = prefixLength;
+        lineIndex < oldDocument.lineCount;
+        lineIndex++
+      ) {
         _previewCache.remove(lineIndex);
       }
       return;
@@ -132,13 +141,17 @@ class MarkdownPreviewEngine {
     _previewCache.clear();
   }
 
-  int _commonPrefixLineCount(MarkdownDocument oldDocument, MarkdownDocument newDocument) {
+  int _commonPrefixLineCount(
+    MarkdownDocument oldDocument,
+    MarkdownDocument newDocument,
+  ) {
     final limit = oldDocument.lineCount < newDocument.lineCount
         ? oldDocument.lineCount
         : newDocument.lineCount;
     var index = 0;
     while (index < limit) {
-      if (oldDocument.lineAt(index).rawText != newDocument.lineAt(index).rawText) {
+      if (oldDocument.lineAt(index).rawText !=
+          newDocument.lineAt(index).rawText) {
         break;
       }
       index++;
@@ -195,12 +208,8 @@ class MarkdownParsedLineCacheKey {
   }
 
   @override
-  int get hashCode => Object.hash(
-    rawText,
-    codeBlockStartLine,
-    codeBlockEndLine,
-    isFence,
-  );
+  int get hashCode =>
+      Object.hash(rawText, codeBlockStartLine, codeBlockEndLine, isFence);
 }
 
 class _CachedPreviewLine {

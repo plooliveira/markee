@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:markee/src/markdown/markdown_editing_controller.dart';
 import 'package:markee/src/shortcuts/shortcuts_detection_widget.dart';
 import 'package:markee/src/shortcuts/markdown_shortcut_map.dart';
 import 'package:markee/src/toolbar/toolbar.dart';
@@ -62,7 +61,6 @@ class _MarkdownEditorState extends State<MarkdownEditor> {
             MarkdownToolbar(
               controller: _controller,
               focusNode: _focusNode,
-              useIncludedTextField: false,
               onShortcuts: (handle) {
                 shortcutsHandler = handle;
               },

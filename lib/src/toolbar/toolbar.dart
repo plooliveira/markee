@@ -16,7 +16,6 @@ class MarkdownToolbar extends StatefulWidget {
   /// [MarkdownToolbar]. Hover over each field for more details on implementing your own TextField correctly.
   const MarkdownToolbar({
     super.key,
-    required this.useIncludedTextField,
     this.controller,
     this.focusNode,
     this.collapsable = true,
@@ -63,15 +62,15 @@ class MarkdownToolbar extends StatefulWidget {
     this.quoteTooltip = 'Quote',
     this.horizontalRuleTooltip = 'Horizontal rule',
     this.onShortcuts,
-  });
+  }) : assert(
+         (controller == null && focusNode == null) ||
+             (controller != null && focusNode != null),
+       );
 
   /// It is recommended that you use your own TextField outside this widget for more customization.
   /// To do that, set [useIncludedTextField] to `false` and implement your own TextField outside.
   /// IMPORTANT: Remember to set the same [controller] and [focusNode] in the TextField as the ones in your [MarkdownToolbar].
   /// Hover over the 2 fields for more details.
-  ///
-  /// If you want to use the included TextField as a quick solution, set [useIncludedTextField] to `true` and you are ready to go.
-  final bool useIncludedTextField;
 
   /// In order to use a custom TextField, assign a [TextEditingController] to the [controller] field.
   /// ```
@@ -253,17 +252,15 @@ class MarkdownToolbar extends StatefulWidget {
 class MarkdownToolbarState extends State<MarkdownToolbar> {
   var isCollapsed = false;
 
-  final TextEditingController _includedController = TextEditingController();
-  late final FocusNode _includedFocusNode;
+  late final TextEditingController _controller;
+  late final FocusNode _focusNode;
 
   @override
   void initState() {
     handleShortcuts();
-    if (widget.useIncludedTextField) {
-      _includedController.addListener(() => setState(() {}));
-      _includedFocusNode = FocusNode();
-    }
-
+    _controller = widget.controller ?? TextEditingController();
+    _focusNode = widget.focusNode ?? FocusNode();
+    _controller.addListener(() => setState(() {}));
     super.initState();
   }
 
@@ -274,11 +271,11 @@ class MarkdownToolbarState extends State<MarkdownToolbar> {
           case TabIntent():
             // onToolbarItemPressed(markdownToolbarOption: MarkdownToolbarOption.bold);
             break;
-          case MarkdownShortcutIntent(action: final action, option: final option):
-            onToolbarItemPressed(
-              markdownToolbarOption: action,
-              option: option,
-            );
+          case MarkdownShortcutIntent(
+            action: final action,
+            option: final option,
+          ):
+            onToolbarItemPressed(markdownToolbarOption: action, option: option);
             break;
         }
       });
@@ -287,10 +284,8 @@ class MarkdownToolbarState extends State<MarkdownToolbar> {
 
   @override
   void dispose() {
-    if (widget.useIncludedTextField) {
-      _includedController.dispose();
-      _includedFocusNode.dispose();
-    }
+    _controller.dispose();
+    _focusNode.dispose();
 
     super.dispose();
   }
@@ -654,19 +649,14 @@ class MarkdownToolbarState extends State<MarkdownToolbar> {
     required MarkdownToolbarOption markdownToolbarOption,
     int? option,
   }) {
-    widget.useIncludedTextField
-        ? _includedFocusNode.requestFocus()
-        : widget.focusNode?.requestFocus();
-    final controller = widget.useIncludedTextField
-        ? _includedController
-        : widget.controller ?? _includedController;
-    final selection = widget.useIncludedTextField
-        ? _includedController.selection
-        : widget.controller?.selection ?? _includedController.selection;
+    _focusNode.requestFocus();
 
-    controller.value = MarkdownFormatter.formatToolbarOption(
+    // If heading should change the selection to the init of the line
+    final selection = _controller.selection;
+
+    _controller.value = MarkdownFormatter.formatToolbarOption(
       markdownToolbarOption: markdownToolbarOption,
-      value: controller.value.copyWith(selection: selection),
+      value: _controller.value,
       option: option,
       customBoldCharacter: widget.boldCharacter,
       customItalicCharacter: widget.italicCharacter,

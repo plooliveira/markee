@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:markee/src/markdown/inline_preview_parser.dart';
+import 'package:markee/src/markdown_deprecated/inline_preview_parser.dart';
 
 class MarkdownSpanBuilder {
   const MarkdownSpanBuilder();

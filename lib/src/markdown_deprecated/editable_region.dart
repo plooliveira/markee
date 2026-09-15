@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/widgets.dart';
-import 'package:markee/src/markdown/markdown_document.dart';
+import 'package:markee/src/markdown_deprecated/markdown_document.dart';
 
 class MarkdownEditableRegion {
   const MarkdownEditableRegion({
@@ -35,7 +35,10 @@ class EditableRegionResolver {
         ? selection
         : TextSelection(
             baseOffset: math.min(selection.baseOffset, selection.extentOffset),
-            extentOffset: math.max(selection.baseOffset, selection.extentOffset),
+            extentOffset: math.max(
+              selection.baseOffset,
+              selection.extentOffset,
+            ),
           );
 
     if (normalizedSelection.isCollapsed &&
@@ -59,10 +62,15 @@ class EditableRegionResolver {
     var endLine = document.lineIndexForOffset(selectionEndOffset);
 
     if (composing != null && composing.isValid && !composing.isCollapsed) {
-      startLine = math.min(startLine, document.lineIndexForOffset(composing.start));
+      startLine = math.min(
+        startLine,
+        document.lineIndexForOffset(composing.start),
+      );
       endLine = math.max(
         endLine,
-        document.lineIndexForOffset(math.max(composing.end - 1, composing.start)),
+        document.lineIndexForOffset(
+          math.max(composing.end - 1, composing.start),
+        ),
       );
     }
 

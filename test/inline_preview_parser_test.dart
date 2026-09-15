@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:markee/src/markdown/inline_preview_parser.dart';
-import 'package:markee/src/markdown/markdown_document.dart';
+import 'package:markee/src/markdown_deprecated/inline_preview_parser.dart';
+import 'package:markee/src/markdown_deprecated/markdown_document.dart';
 
 void main() {
   group('MarkdownInlinePreviewParser', () {
@@ -13,8 +13,14 @@ void main() {
       expect(preview.type, MarkdownLineType.heading);
       expect(preview.headingLevel, 1);
       expect(preview.chunks, hasLength(2));
-      expect(preview.chunks[0].previewSegments.single.style, MarkdownSegmentStyle.hiddenSyntax);
-      expect(preview.chunks[1].previewSegments.single.style, MarkdownSegmentStyle.headingText);
+      expect(
+        preview.chunks[0].previewSegments.single.style,
+        MarkdownSegmentStyle.hiddenSyntax,
+      );
+      expect(
+        preview.chunks[1].previewSegments.single.style,
+        MarkdownSegmentStyle.headingText,
+      );
       expect(preview.chunks[1].previewSegments.single.text, 'Heading **bold**');
     });
 
@@ -45,8 +51,14 @@ void main() {
     test('parses code block lines separately from regular paragraphs', () {
       final document = MarkdownDocument.fromText('```\nfinal x = 1;\n```');
 
-      expect(parser.parseLine(document.lineAt(0)).type, MarkdownLineType.codeFence);
-      expect(parser.parseLine(document.lineAt(1)).type, MarkdownLineType.codeBlock);
+      expect(
+        parser.parseLine(document.lineAt(0)).type,
+        MarkdownLineType.codeFence,
+      );
+      expect(
+        parser.parseLine(document.lineAt(1)).type,
+        MarkdownLineType.codeBlock,
+      );
     });
   });
 }

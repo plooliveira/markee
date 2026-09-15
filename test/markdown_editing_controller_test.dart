@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:markee/src/markdown/markdown_editing_controller.dart';
+import 'package:markee/src/markdown_deprecated/markdown_editing_controller.dart';
 
 void main() {
   group('MarkdownEditingController', () {
@@ -32,9 +32,9 @@ void main() {
 
       final firstLine = span.children![0] as TextSpan;
       final secondLine = span.children![1] as TextSpan;
-      final boldSegment = _descendantTextSpans(secondLine).firstWhere(
-        (child) => child.text == 'bold',
-      );
+      final boldSegment = _descendantTextSpans(
+        secondLine,
+      ).firstWhere((child) => child.text == 'bold');
 
       expect(firstLine.text, '# Title\n');
       expect(secondLine.text, isNull);
@@ -42,7 +42,9 @@ void main() {
       expect(boldSegment.style?.fontWeight, FontWeight.w700);
     });
 
-    testWidgets('reveals only the inline token under the cursor', (tester) async {
+    testWidgets('reveals only the inline token under the cursor', (
+      tester,
+    ) async {
       final text = 'Every conversation has **Correspondence** and more text.';
       final controller = MarkdownEditingController(text: text);
       controller.selection = TextSelection.collapsed(
@@ -82,20 +84,20 @@ void main() {
       );
     });
 
-    test('shifts cursor into revealed inline token to keep backspace aligned', () {
-      final text = 'Every conversation has **Correspondence** and more text.';
-      final controller = MarkdownEditingController(text: text);
+    test(
+      'shifts cursor into revealed inline token to keep backspace aligned',
+      () {
+        final text = 'Every conversation has **Correspondence** and more text.';
+        final controller = MarkdownEditingController(text: text);
 
-      controller.selection = const TextSelection.collapsed(offset: 0);
+        controller.selection = const TextSelection.collapsed(offset: 0);
 
-      final previewOffset = text.indexOf('Correspondence') + 1;
-      controller.selection = TextSelection.collapsed(offset: previewOffset);
+        final previewOffset = text.indexOf('Correspondence') + 1;
+        controller.selection = TextSelection.collapsed(offset: previewOffset);
 
-      expect(
-        controller.selection.extentOffset,
-        previewOffset + 2,
-      );
-    });
+        expect(controller.selection.extentOffset, previewOffset + 2);
+      },
+    );
 
     testWidgets('keeps paragraph preview when cursor is outside inline token', (
       tester,
@@ -126,43 +128,50 @@ void main() {
       final lineSpan = span.children!.single as TextSpan;
       final chunks = lineSpan.children!.whereType<TextSpan>().toList();
 
-      expect(chunks.any((chunk) => chunk.text == '**Correspondence**'), isFalse);
       expect(
-        chunks.expand((chunk) => chunk.children?.whereType<TextSpan>() ?? const <TextSpan>[]),
+        chunks.any((chunk) => chunk.text == '**Correspondence**'),
+        isFalse,
+      );
+      expect(
+        chunks.expand(
+          (chunk) =>
+              chunk.children?.whereType<TextSpan>() ?? const <TextSpan>[],
+        ),
         isNotEmpty,
       );
     });
 
-    testWidgets('reveals the entire heading line instead of inline heading tokens', (
-      tester,
-    ) async {
-      final text = '# Heading **bold**';
-      final controller = MarkdownEditingController(text: text);
-      controller.selection = TextSelection.collapsed(
-        offset: text.indexOf('bold') + 1,
-      );
-      late BuildContext context;
+    testWidgets(
+      'reveals the entire heading line instead of inline heading tokens',
+      (tester) async {
+        final text = '# Heading **bold**';
+        final controller = MarkdownEditingController(text: text);
+        controller.selection = TextSelection.collapsed(
+          offset: text.indexOf('bold') + 1,
+        );
+        late BuildContext context;
 
-      await tester.pumpWidget(
-        Directionality(
-          textDirection: TextDirection.ltr,
-          child: Builder(
-            builder: (capturedContext) {
-              context = capturedContext;
-              return const SizedBox();
-            },
+        await tester.pumpWidget(
+          Directionality(
+            textDirection: TextDirection.ltr,
+            child: Builder(
+              builder: (capturedContext) {
+                context = capturedContext;
+                return const SizedBox();
+              },
+            ),
           ),
-        ),
-      );
+        );
 
-      final span = controller.buildTextSpan(
-        context: context,
-        style: const TextStyle(fontSize: 16),
-        withComposing: false,
-      );
+        final span = controller.buildTextSpan(
+          context: context,
+          style: const TextStyle(fontSize: 16),
+          withComposing: false,
+        );
 
-      expect((span.children!.single as TextSpan).text, text);
-    });
+        expect((span.children!.single as TextSpan).text, text);
+      },
+    );
 
     testWidgets('expands raw editing to the whole code block', (tester) async {
       final text = 'before\n```\ncode\n```\nafter';
@@ -302,7 +311,9 @@ void main() {
           return true;
         },
       );
-      controller.selection = TextSelection.collapsed(offset: controller.text.length);
+      controller.selection = TextSelection.collapsed(
+        offset: controller.text.length,
+      );
       late BuildContext context;
 
       await tester.pumpWidget(
@@ -324,10 +335,12 @@ void main() {
       );
 
       final lineSpan = span.children!.first as TextSpan;
-      final linkTextSpanWithoutModifier = _descendantTextSpans(lineSpan)
-          .firstWhere((child) => child.text == 'My Link text');
-      final hiddenUrlSpan = _descendantTextSpans(lineSpan)
-          .firstWhere((child) => child.text == 'https://example.com');
+      final linkTextSpanWithoutModifier = _descendantTextSpans(
+        lineSpan,
+      ).firstWhere((child) => child.text == 'My Link text');
+      final hiddenUrlSpan = _descendantTextSpans(
+        lineSpan,
+      ).firstWhere((child) => child.text == 'https://example.com');
 
       expect(linkTextSpanWithoutModifier.recognizer, isNull);
       expect(hiddenUrlSpan.style?.color, Colors.transparent);
@@ -339,8 +352,9 @@ void main() {
         withComposing: false,
       );
       final interactiveLineSpan = interactiveSpan.children!.first as TextSpan;
-      final linkTextSpanWithModifier = _descendantTextSpans(interactiveLineSpan)
-          .firstWhere((child) => child.text == 'My Link text');
+      final linkTextSpanWithModifier = _descendantTextSpans(
+        interactiveLineSpan,
+      ).firstWhere((child) => child.text == 'My Link text');
 
       expect(linkTextSpanWithModifier.recognizer, isA<TapGestureRecognizer>());
 

@@ -1,4 +1,4 @@
-import 'package:markee/src/markdown/markdown_document.dart';
+import 'package:markee/src/markdown_deprecated/markdown_document.dart';
 
 enum MarkdownLineType {
   paragraph,
@@ -43,9 +43,7 @@ class MarkdownPreviewLine {
   final int? headingLevel;
 
   List<MarkdownSegment> get segments {
-    return [
-      for (final chunk in chunks) ...chunk.previewSegments,
-    ];
+    return [for (final chunk in chunks) ...chunk.previewSegments];
   }
 }
 
@@ -120,7 +118,9 @@ class MarkdownInlinePreviewParser {
       );
       _appendNewLine(chunks, line);
       return MarkdownPreviewLine(
-        type: line.isFence ? MarkdownLineType.codeFence : MarkdownLineType.codeBlock,
+        type: line.isFence
+            ? MarkdownLineType.codeFence
+            : MarkdownLineType.codeBlock,
         chunks: chunks,
       );
     }
@@ -144,7 +144,10 @@ class MarkdownInlinePreviewParser {
         MarkdownPreviewChunk(
           rawText: title,
           previewSegments: [
-            MarkdownSegment(text: title, style: MarkdownSegmentStyle.headingText),
+            MarkdownSegment(
+              text: title,
+              style: MarkdownSegmentStyle.headingText,
+            ),
           ],
           rawStart: prefix.length,
           rawEnd: content.length,
@@ -158,24 +161,26 @@ class MarkdownInlinePreviewParser {
       );
     }
 
-    final checkboxMatch = RegExp(r'^([-*]\s+\[(?: |x|X)\]\s+)(.*)$').firstMatch(content);
+    final checkboxMatch = RegExp(
+      r'^([-*]\s+\[(?: |x|X)\]\s+)(.*)$',
+    ).firstMatch(content);
     if (checkboxMatch != null) {
       final prefix = checkboxMatch.group(1)!;
       chunks.add(
         MarkdownPreviewChunk(
           rawText: prefix,
           previewSegments: [
-            MarkdownSegment(text: prefix, style: MarkdownSegmentStyle.listMarker),
+            MarkdownSegment(
+              text: prefix,
+              style: MarkdownSegmentStyle.listMarker,
+            ),
           ],
           rawStart: 0,
           rawEnd: prefix.length,
         ),
       );
       chunks.addAll(
-        _parseInline(
-          checkboxMatch.group(2)!,
-          startOffset: prefix.length,
-        ),
+        _parseInline(checkboxMatch.group(2)!, startOffset: prefix.length),
       );
       _appendNewLine(chunks, line);
       return MarkdownPreviewLine(
@@ -191,17 +196,17 @@ class MarkdownInlinePreviewParser {
         MarkdownPreviewChunk(
           rawText: prefix,
           previewSegments: [
-            MarkdownSegment(text: prefix, style: MarkdownSegmentStyle.listMarker),
+            MarkdownSegment(
+              text: prefix,
+              style: MarkdownSegmentStyle.listMarker,
+            ),
           ],
           rawStart: 0,
           rawEnd: prefix.length,
         ),
       );
       chunks.addAll(
-        _parseInline(
-          orderedListMatch.group(2)!,
-          startOffset: prefix.length,
-        ),
+        _parseInline(orderedListMatch.group(2)!, startOffset: prefix.length),
       );
       _appendNewLine(chunks, line);
       return MarkdownPreviewLine(
@@ -217,17 +222,17 @@ class MarkdownInlinePreviewParser {
         MarkdownPreviewChunk(
           rawText: prefix,
           previewSegments: [
-            MarkdownSegment(text: prefix, style: MarkdownSegmentStyle.listMarker),
+            MarkdownSegment(
+              text: prefix,
+              style: MarkdownSegmentStyle.listMarker,
+            ),
           ],
           rawStart: 0,
           rawEnd: prefix.length,
         ),
       );
       chunks.addAll(
-        _parseInline(
-          unorderedListMatch.group(2)!,
-          startOffset: prefix.length,
-        ),
+        _parseInline(unorderedListMatch.group(2)!, startOffset: prefix.length),
       );
       _appendNewLine(chunks, line);
       return MarkdownPreviewLine(
@@ -243,23 +248,20 @@ class MarkdownInlinePreviewParser {
         MarkdownPreviewChunk(
           rawText: prefix,
           previewSegments: [
-            MarkdownSegment(text: prefix, style: MarkdownSegmentStyle.quoteMarker),
+            MarkdownSegment(
+              text: prefix,
+              style: MarkdownSegmentStyle.quoteMarker,
+            ),
           ],
           rawStart: 0,
           rawEnd: prefix.length,
         ),
       );
       chunks.addAll(
-        _parseInline(
-          quoteMatch.group(2)!,
-          startOffset: prefix.length,
-        ),
+        _parseInline(quoteMatch.group(2)!, startOffset: prefix.length),
       );
       _appendNewLine(chunks, line);
-      return MarkdownPreviewLine(
-        type: MarkdownLineType.quote,
-        chunks: chunks,
-      );
+      return MarkdownPreviewLine(type: MarkdownLineType.quote, chunks: chunks);
     }
 
     if (RegExp(r'^\s*([-*_])(?:\s*\1){2,}\s*$').hasMatch(content)) {
@@ -285,7 +287,10 @@ class MarkdownInlinePreviewParser {
 
     chunks.addAll(_parseInline(content));
     _appendNewLine(chunks, line);
-    return MarkdownPreviewLine(type: MarkdownLineType.paragraph, chunks: chunks);
+    return MarkdownPreviewLine(
+      type: MarkdownLineType.paragraph,
+      chunks: chunks,
+    );
   }
 
   void _appendNewLine(List<MarkdownPreviewChunk> chunks, MarkdownLine line) {
@@ -431,17 +436,26 @@ class MarkdownInlinePreviewParser {
         rawEnd: startOffset + closeParen + 1,
         isEditable: true,
         previewSegments: [
-          const MarkdownSegment(text: '![', style: MarkdownSegmentStyle.hiddenSyntax),
+          const MarkdownSegment(
+            text: '![',
+            style: MarkdownSegmentStyle.hiddenSyntax,
+          ),
           MarkdownSegment(
             text: text.substring(offset + 2, closeBracket),
             style: MarkdownSegmentStyle.imageAlt,
           ),
-          const MarkdownSegment(text: '](', style: MarkdownSegmentStyle.hiddenSyntax),
+          const MarkdownSegment(
+            text: '](',
+            style: MarkdownSegmentStyle.hiddenSyntax,
+          ),
           MarkdownSegment(
             text: text.substring(openParen + 1, closeParen),
             style: MarkdownSegmentStyle.imageSource,
           ),
-          const MarkdownSegment(text: ')', style: MarkdownSegmentStyle.hiddenSyntax),
+          const MarkdownSegment(
+            text: ')',
+            style: MarkdownSegmentStyle.hiddenSyntax,
+          ),
         ],
       ),
     );
@@ -469,15 +483,24 @@ class MarkdownInlinePreviewParser {
         rawEnd: startOffset + closeParen + 1,
         isEditable: true,
         previewSegments: [
-          const MarkdownSegment(text: '[', style: MarkdownSegmentStyle.hiddenSyntax),
+          const MarkdownSegment(
+            text: '[',
+            style: MarkdownSegmentStyle.hiddenSyntax,
+          ),
           MarkdownSegment(
             text: text.substring(offset + 1, closeBracket),
             style: MarkdownSegmentStyle.linkText,
             linkUrl: url,
           ),
-          const MarkdownSegment(text: '](', style: MarkdownSegmentStyle.hiddenSyntax),
+          const MarkdownSegment(
+            text: '](',
+            style: MarkdownSegmentStyle.hiddenSyntax,
+          ),
           MarkdownSegment(text: url, style: MarkdownSegmentStyle.hiddenSyntax),
-          const MarkdownSegment(text: ')', style: MarkdownSegmentStyle.hiddenSyntax),
+          const MarkdownSegment(
+            text: ')',
+            style: MarkdownSegmentStyle.hiddenSyntax,
+          ),
         ],
       ),
     );
@@ -508,12 +531,18 @@ class MarkdownInlinePreviewParser {
         rawEnd: startOffset + closeOffset + delimiter.length,
         isEditable: true,
         previewSegments: [
-          MarkdownSegment(text: delimiter, style: MarkdownSegmentStyle.hiddenSyntax),
+          MarkdownSegment(
+            text: delimiter,
+            style: MarkdownSegmentStyle.hiddenSyntax,
+          ),
           MarkdownSegment(
             text: text.substring(offset + delimiter.length, closeOffset),
             style: innerStyle,
           ),
-          MarkdownSegment(text: delimiter, style: MarkdownSegmentStyle.hiddenSyntax),
+          MarkdownSegment(
+            text: delimiter,
+            style: MarkdownSegmentStyle.hiddenSyntax,
+          ),
         ],
       ),
     );
@@ -536,10 +565,7 @@ class MarkdownInlinePreviewParser {
 }
 
 class _ParsedToken {
-  const _ParsedToken({
-    required this.nextOffset,
-    required this.chunk,
-  });
+  const _ParsedToken({required this.nextOffset, required this.chunk});
 
   final int nextOffset;
   final MarkdownPreviewChunk chunk;

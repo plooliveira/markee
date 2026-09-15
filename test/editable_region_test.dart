@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:markee/src/markdown/editable_region.dart';
-import 'package:markee/src/markdown/markdown_document.dart';
+import 'package:markee/src/markdown_deprecated/editable_region.dart';
+import 'package:markee/src/markdown_deprecated/markdown_document.dart';
 
 void main() {
   group('EditableRegionResolver', () {

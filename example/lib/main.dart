@@ -29,7 +29,7 @@ class EditorPage extends StatefulWidget {
 }
 
 class _EditorPageState extends State<EditorPage> {
-  final _controller = MarkdownEditingController(
+  final _controller = TextEditingController(
     text: '''# Olá, Markee!
 
 Escreva seu Markdown aqui e use a barra de ferramentas para formatar o texto.

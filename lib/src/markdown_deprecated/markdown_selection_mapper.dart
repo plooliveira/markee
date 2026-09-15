@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
-import 'package:markee/src/markdown/inline_preview_parser.dart';
-import 'package:markee/src/markdown/markdown_document.dart';
-import 'package:markee/src/markdown/markdown_edit_policy.dart';
+import 'package:markee/src/markdown_deprecated/inline_preview_parser.dart';
+import 'package:markee/src/markdown_deprecated/markdown_document.dart';
+import 'package:markee/src/markdown_deprecated/markdown_edit_policy.dart';
 
 class MarkdownSelectionMapper {
   const MarkdownSelectionMapper({
@@ -17,7 +17,8 @@ class MarkdownSelectionMapper {
     required MarkdownPreviewLine parsedLine,
     required MarkdownLine line,
   }) {
-    if (previousValue.text != nextValue.text || !nextValue.selection.isCollapsed) {
+    if (previousValue.text != nextValue.text ||
+        !nextValue.selection.isCollapsed) {
       return nextValue;
     }
 
@@ -42,7 +43,8 @@ class MarkdownSelectionMapper {
       return nextValue;
     }
 
-    final adjustedOffset = nextValue.selection.extentOffset + nextChunk.leadingHiddenTextLength;
+    final adjustedOffset =
+        nextValue.selection.extentOffset + nextChunk.leadingHiddenTextLength;
     return nextValue.copyWith(
       selection: TextSelection.collapsed(
         offset: adjustedOffset.clamp(nextChunk.rawStart, nextChunk.rawEnd),
