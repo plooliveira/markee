@@ -36,7 +36,7 @@ class MarkdownFormatter {
       case MarkdownToolbarOption.code:
         return value;
       case MarkdownToolbarOption.heading:
-        return _heading(value);
+        return _heading(value, option!);
       case MarkdownToolbarOption.link:
         return value;
       case MarkdownToolbarOption.image:
@@ -54,28 +54,38 @@ class MarkdownFormatter {
     }
   }
 
-  static TextEditingValue _heading(TextEditingValue value) {
+  static TextEditingValue _heading(TextEditingValue value, int option) {
     final lines = value.text.split('\n').asMap();
-    final List<String> newLines = [];
+    final newLines = lines.values.toList();
     final selectedLines = _selectedLines(value);
-
-    print(value.selection.textBefore(value.text));
-    print(selectedLines);
+    int baseOffsetAdd = 0;
+    int extentOffsetAdd = 0;
 
     for (final line in selectedLines) {
       final lineText = lines[line];
-      final trimedLine = lineText?.trim();
-      if (trimedLine != "" && lineText?[0] != "-") {
-        newLines.add("#$lineText");
-      } else {
-        newLines.add("$lineText");
+
+      if (lineText?.trim() != '') {
+        newLines[line] = '${"#" * (option + 1)} $lineText';
+        if (value.selection.baseOffset < value.selection.extentOffset) {
+          baseOffsetAdd = option + 2;
+          extentOffsetAdd = (baseOffsetAdd * 2);
+        } else {
+          extentOffsetAdd = option + 2;
+          baseOffsetAdd = (extentOffsetAdd * 2);
+        }
+        continue;
       }
+
+      newLines[line] = lineText!;
     }
 
-    print(newLines);
-
-    return TextEditingValue(
-      text: value.selection.textBefore(value.text) + newLines.join('\n'),
+    return value.copyWith(
+      text: newLines.join('\n'),
+      selection: value.selection.copyWith(
+        baseOffset: value.selection.baseOffset + baseOffsetAdd,
+        extentOffset: value.selection.extentOffset + extentOffsetAdd,
+      ),
+      composing: TextRange.empty,
     );
   }
 

@@ -651,9 +651,6 @@ class MarkdownToolbarState extends State<MarkdownToolbar> {
   }) {
     _focusNode.requestFocus();
 
-    // If heading should change the selection to the init of the line
-    final selection = _controller.selection;
-
     _controller.value = MarkdownFormatter.formatToolbarOption(
       markdownToolbarOption: markdownToolbarOption,
       value: _controller.value,
